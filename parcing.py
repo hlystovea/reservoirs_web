@@ -16,7 +16,7 @@ def parcing_bwu():
     # добавление данных об уровнях водохранилищ в файл
     try:
         # чтение последней даты в файле
-        f = open('/level.csv', 'r')
+        f = open('level.csv', 'r')
         last_date = f.readlines()[-1].split(';')[0]
         f.close()
 
@@ -28,15 +28,9 @@ def parcing_bwu():
                     level = data_level[i*6+n].split()[3]
                     f_str = f_str + ';' + level
                 f_str = f_str + '\n' 
-                f = open('/level.csv', 'a')
+                f = open('level.csv', 'a')
                 f.write(f_str) # запись в файл
         f.close()
 
     except:
         print('Ошибка в содержании файла или файл не найден')
-    print(time.ctime())
-    
-while True:
-    time.sleep(3945)
-    parcing_bwu()
-

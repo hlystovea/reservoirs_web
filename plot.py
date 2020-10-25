@@ -5,7 +5,7 @@ def plot(res, days):
     x = []
     y = []
     m = int(res)
-    with open('/level.csv', 'r') as f:
+    with open('level.csv', 'r') as f:
         str = f.readlines()
     n = len(str) - 1
     if int(days) > (len(str) - 1):
