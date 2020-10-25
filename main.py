@@ -61,7 +61,7 @@ def text_message(message):
         days = split[2]
         if res.isdigit() and days.isdigit():
             plot(res, days)
-            pic = open('D:/python/bwu/pic.png', 'rb')
+            pic = open('/pic.png', 'rb')
             bot.send_photo(message.chat.id, pic)
 
 
