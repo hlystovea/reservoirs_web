@@ -1,10 +1,19 @@
 import telebot
 import os
 import matplotlib.pyplot as plt
+import time
+from bs4 import BeautifulSoup
+import requests
+import re
+import time
+from parcing import parcing_bwu
 from plot import plot
 from telebot.types import (InlineKeyboardMarkup, ReplyKeyboardMarkup,
             KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton)
 
+now = time.gmtime()
+if now.tm_min == 55:
+    parcing_bwu()
 
 token = os.environ.get('BOT_BWU')
 bot = telebot.TeleBot('token')
