@@ -1,1 +1,1 @@
-worker: python parcing.py
+worker: python main.py
