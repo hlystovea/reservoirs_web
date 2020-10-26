@@ -57,8 +57,8 @@ def text_message(message):
         days = split[2]
         if res.isdigit() and days.isdigit():
             plot(res, days)
-            pic = open('pic.png', 'rb')
-            bot.send_photo(message.chat.id, pic)
+            with open('pic.png', 'rb') as pic:
+                bot.send_photo(message.chat.id, pic)
 
 now = time.gmtime()
 if now.tm_min == 55:
