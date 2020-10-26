@@ -30,7 +30,10 @@ def parcing_bwu():
                 f_str = f_str + '\n' 
                 f = open('level.csv', 'a')
                 f.write(f_str) # запись в файл
-        f.close()
+                f.close()
+                print(f'Добавлены данные за {date}')
+            else:
+                print(f'Данные за {date} уже существуют')
 
     except:
         print('Ошибка в содержании файла или файл не найден')

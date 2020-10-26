@@ -61,7 +61,7 @@ def text_message(message):
                 bot.send_photo(message.chat.id, pic)
 
 now = time.gmtime()
-if now.tm_min == 55:
+if now.tm_min == 10:
     parcing_bwu()
 
 bot.polling()
