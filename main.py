@@ -59,9 +59,12 @@ def text_message(message):
             plot(res, days)
             with open('pic.png', 'rb') as pic:
                 bot.send_photo(message.chat.id, pic)
+    elif split[1] == 'level.csv':
+            with open('level.csv', 'rb') as level:
+                bot.send_document(message.chat.id, level)
 
 now = time.gmtime()
-if now.tm_min == 30:
+if now.tm_min == 39:
     parcing_bwu()
 
 bot.polling(none_stop=True, interval=0, timeout=120)

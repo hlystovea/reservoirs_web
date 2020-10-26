@@ -38,3 +38,5 @@ def parcing_bwu():
 
     except:
         print('Ошибка в содержании файла или файл не найден')
+        
+parcing_bwu()
