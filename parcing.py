@@ -24,6 +24,7 @@ def parcing_bwu():
             date = data_date[i].split()[1]
             if date > last_date: # проверка "свежести" данных
                 f_str = date
+                print(f'Есть новые данные за {date}')
                 for n in range(0, 6): # подготовка строки для записи в файл
                     level = data_level[i*6+n].split()[3]
                     f_str = f_str + ';' + level
