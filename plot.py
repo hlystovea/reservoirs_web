@@ -8,7 +8,7 @@ def plot(res, days):
     x = []
     y = []
     m = int(res) # номер водохранилища
-    with open('/tmp/level.csv', 'r') as f:
+    with open('level.csv', 'r') as f:
         str = f.readlines()
 
     if int(days) > (len(str) - 1): # сравнение кол-ва дней с кол-ом записей
@@ -63,4 +63,4 @@ def plot(res, days):
     plt.savefig('{}.{}'.format(name, fmt))
 
 
-plot(5, 30)
+plot(1, 30)
