@@ -63,6 +63,7 @@ def plot(res, time1, time2):
     name = 'pic'
     fmt = 'png'
     plt.savefig('{}.{}'.format(name, fmt))
+    plt.close
 
     try:
         date1 = datetime.strptime(sample[0][0], '%Y-%m-%d')
@@ -79,4 +80,4 @@ def plot(res, time1, time2):
 
 
 if __name__ == '__main__':
-    plot(1, '2020-01-01', '2020-12-31')
+    plot(2, '2020-01-01', '2020-12-31')

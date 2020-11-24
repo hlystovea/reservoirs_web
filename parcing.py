@@ -1,6 +1,7 @@
 import requests
 import re
 import sqlite3
+import time
 
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -46,5 +47,11 @@ def parcing_bwu():
     conn.close()
 
 
+def timer():
+    while True:
+        parcing_bwu()
+        time.sleep(10800)
+
+
 if __name__ == '__main__':
-    parcing_bwu()
+    timer()
