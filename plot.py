@@ -65,6 +65,8 @@ def plot(res, time1, time2):
     plt.savefig('{}.{}'.format(name, fmt))
     plt.close
 
+    save_csv(x, y)
+
     try:
         date1 = datetime.strptime(sample[0][0], '%Y-%m-%d')
         date1 = date1.strftime('%d.%m.%Y')
@@ -79,5 +81,16 @@ def plot(res, time1, time2):
         return (text, result)
 
 
+def save_csv(x, y):
+    record = ''
+    for d in range(len(x)):
+        record += x[d]
+        record += ';' + str(y[d])
+        record += '\n'
+    f = open('level.csv', 'w')
+    f.write(record)
+    f.close()
+
+
 if __name__ == '__main__':
-    plot(2, '2020-01-01', '2020-12-31')
+    plot(1, '2020-01-01', '2020-12-31')
