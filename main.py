@@ -41,72 +41,67 @@ def start(message):
 # Inputing period manually
 @bot.message_handler(regexp='^[0-3][0-9][.][01][0-9][.][12][09][0-9][0-9]$')
 def manually_plot(message):
-    if 'res' in choice:
+    if ('res' and 'date1') in choice:
         res = choice['res']
-        if 'date1' in choice:
-            date1 = choice['date1']
+        date1 = choice['date1']
+        try:
+            date2 = datetime.strptime(message.text, '%d.%m.%Y')
+            date2 = datetime.date(date2)
+            if date1 < date2:
+                answer = plot(res, date1, date2)
+            else:
+                answer = plot(res, date2, date1)
             try:
-                date2 = datetime.strptime(message.text, '%d.%m.%Y')
-                date2 = datetime.date(date2)
-                if date1 < date2:
-                    answer = plot(res, date1, date2)
-                else:
-                    answer = plot(res, date2, date1)
-                try:
-                    bot.delete_message(
-                        message.chat.id,
-                        message.reply_to_message.message_id)
-                except AttributeError:
-                    pass
-                finally:
-                    bot.delete_message(
-                        message.chat.id,
-                        message.message_id)
-                    bot.send_message(
-                        message.chat.id,
-                        answer[0],
-                        reply_markup=main_kbrd)
-                    if answer[1] == 'succed':
-                        with open('pic.png', 'rb') as pic:
-                            bot.send_photo(
-                                message.chat.id,
-                                pic)
-                        with open('level.csv', 'rb') as tbl:
-                            bot.send_document(
-                                message.chat.id,
-                                tbl)
-                del choice['date1']
-                del choice['res']
-            except ValueError:
+                bot.delete_message(
+                    message.chat.id,
+                    message.reply_to_message.message_id)
+            except AttributeError:
+                pass
+            finally:
+                bot.delete_message(
+                    message.chat.id,
+                    message.message_id)
                 bot.send_message(
                     message.chat.id,
-                    'Ошибка в дате, попробуйте ещё раз',
+                    answer[0],
                     reply_markup=main_kbrd)
-        else:
+                if answer[1] == 'succed':
+                    with open('pic.png', 'rb') as pic:
+                        bot.send_photo(message.chat.id, pic)
+                    with open('level.csv', 'rb') as tbl:
+                        bot.send_document(message.chat.id, tbl)
+            choice.clear()
+        except ValueError:
+            text = 'Ошибка в дате, попробуйте ещё раз'
+            bot.send_message(
+                message.chat.id,
+                text,
+                reply_markup=main_kbrd)
+    elif 'res' in choice:
+        try:
+            date1 = datetime.strptime(message.text, '%d.%m.%Y')
+            date1 = datetime.date(date1)
+            choice['date1'] = date1
+            text = 'Введите вторую дату периода в формате dd.mm.yyyy'
             try:
-                date1 = datetime.strptime(message.text, '%d.%m.%Y')
-                date1 = datetime.date(date1)
-                choice['date1'] = date1
-                text = 'Введите вторую дату периода в формате dd.mm.yyyy'
-                try:
-                    bot.delete_message(
-                        message.chat.id,
-                        message.reply_to_message.message_id)
-                except AttributeError:
-                    pass
-                finally:
-                    bot.delete_message(
-                        message.chat.id,
-                        message.message_id)
-                    bot.send_message(
-                        message.chat.id,
-                        text,
-                        reply_markup=ForceReply())
-            except ValueError:
+                bot.delete_message(
+                    message.chat.id,
+                    message.reply_to_message.message_id)
+            except AttributeError:
+                pass
+            finally:
+                bot.delete_message(
+                    message.chat.id,
+                    message.message_id)
                 bot.send_message(
                     message.chat.id,
-                    'Ошибка в дате, попробуйте ещё раз',
-                    reply_markup=main_kbrd)
+                    text,
+                    reply_markup=ForceReply())
+        except ValueError:
+            bot.send_message(
+                message.chat.id,
+                'Ошибка в дате, попробуйте ещё раз',
+                reply_markup=main_kbrd)
     else:
         text = 'Сначала выберите водохранилище.'
         bot.send_message(message.chat.id, text)
