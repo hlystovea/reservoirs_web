@@ -1,9 +1,9 @@
-import requests
 import re
 import sqlite3
 import time
-
 from datetime import datetime
+
+import requests
 from bs4 import BeautifulSoup
 
 

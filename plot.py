@@ -1,10 +1,10 @@
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-import matplotlib.dates as mdates
+import io
 import sqlite3
-
 from datetime import datetime
 
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 # Вспомогательный словарь с параметрами водохранилищ: ФПУ, НПУ, УМО
 res_param = {
@@ -60,10 +60,10 @@ def plot(res, time1, time2):
     ax.tick_params('y', labelsize=8)
 
     # Сохранение файла
-    name = 'pic'
-    fmt = 'png'
-    plt.savefig('{}.{}'.format(name, fmt))
+    pic = io.BytesIO()
+    plt.savefig(pic, format='png')
     plt.close
+    pic.seek(0)
 
     save_csv(x, y)
 
@@ -73,12 +73,12 @@ def plot(res, time1, time2):
         date2 = datetime.strptime(sample[-1][0], '%Y-%m-%d')
         date2 = date2.strftime('%d.%m.%Y')
         text = f'График за период с {date1} по {date2}'
-        result = 'succed'
+        is_success = True
     except IndexError:
         text = 'Нет данных за указанный период времени'
-        result = 'failed'
+        is_success = False
     finally:
-        return (text, result)
+        return (pic, text, is_success)
 
 
 def save_csv(x, y):
