@@ -40,8 +40,12 @@ def plot(res, time1, time2):
 
     # Определяем цену делений оси x
     major_ticker = 1
-    if len(x) > 5:
-        major_ticker = int(len(x)/5)
+    try:
+        d = dates[-1] - dates[0]
+        if d.days > 7:
+            major_ticker = int(d.days/6)
+    except IndexError:
+        pass
 
     # Построение графика
     fig = plt.figure(figsize=(6, 4))

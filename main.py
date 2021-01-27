@@ -7,8 +7,10 @@ from telebot.types import (ForceReply, InlineKeyboardButton,
 
 from plot import plot, res_param
 
-token = os.environ.get('BOT_BWU')
-bot = telebot.TeleBot(token)
+ADMIN_ID = 490603652
+TOKEN = os.environ.get('BOT_BWU')
+
+bot = telebot.TeleBot(TOKEN)
 
 main_kbrd = ReplyKeyboardMarkup(True, selective=True)
 main_kbrd.row('Показать список')
@@ -30,86 +32,6 @@ def start(message):
         parse_mode='Markdown',
         disable_web_page_preview=True,
     )
-
-
-# Inputing period manually
-@bot.message_handler(regexp='^[0-3][0-9][.][01][0-9][.][12][09][0-9][0-9]$')
-def manually_plot(message):
-    if ('res' and 'date1') in choice:
-        res = choice['res']
-        date1 = choice['date1']
-        try:
-            date2 = datetime.strptime(message.text, '%d.%m.%Y')
-            date2 = datetime.date(date2)
-            if date1 < date2:
-                pic, answer, is_success = plot(res, date1, date2)
-            else:
-                pic, answer, is_success = plot(res, date2, date1)
-            try:
-                bot.delete_message(
-                    message.chat.id,
-                    message.reply_to_message.message_id,
-                )
-            except AttributeError:
-                pass
-            finally:
-                bot.delete_message(message.chat.id, message.message_id)
-                bot.send_message(
-                    message.chat.id,
-                    answer,
-                    reply_markup=main_kbrd,
-                )
-                if is_success:
-                    bot.send_photo(message.chat.id, pic)
-                    with open('level.csv', 'rb') as csv:
-                        bot.send_document(message.chat.id, csv)
-            choice.clear()
-        except ValueError:
-            text = 'Ошибка в дате, попробуйте ещё раз'
-            bot.send_message(message.chat.id, text, reply_markup=main_kbrd)
-    elif 'res' in choice:
-        try:
-            date1 = datetime.strptime(message.text, '%d.%m.%Y')
-            date1 = datetime.date(date1)
-            choice['date1'] = date1
-            text = 'Введите вторую дату периода в формате dd.mm.yyyy'
-            try:
-                bot.delete_message(
-                    message.chat.id,
-                    message.reply_to_message.message_id,
-                )
-            except AttributeError:
-                pass
-            finally:
-                bot.delete_message(message.chat.id, message.message_id)
-                bot.send_message(
-                    message.chat.id,
-                    text,
-                    reply_markup=ForceReply(),
-                )
-        except ValueError:
-            text = 'Ошибка в дате, попробуйте ещё раз'
-            bot.send_message(message.chat.id, text, reply_markup=main_kbrd)
-    else:
-        text = 'Сначала выберите водохранилище.'
-        bot.send_message(message.chat.id, text)
-
-
-# Choice of reservoir
-@bot.message_handler(content_types=['text'])
-def list_reservoirs(message):
-    keyboard = InlineKeyboardMarkup()
-    for r in sorted(res_param):
-        button = InlineKeyboardButton(
-            res_param[r][0],
-            callback_data=f'reservoir {str(r)}',
-        )
-        keyboard.add(button)
-    text = ('Выберите водохранилище, чтобы построить'
-            'график уровня верхнего бьефа.')
-    if message.text.lower() == 'показать список':
-        bot.delete_message(message.chat.id, message.message_id)
-        bot.send_message(message.chat.id, text, reply_markup=keyboard)
 
 
 # Choice of period and plotting
@@ -159,18 +81,106 @@ def query_handler(call):
                 call.message.chat.id,
                 call.message.message_id,
             )
-            bot.send_photo(call.message.chat.id, pic)
+            if is_success:
+                bot.send_photo(call.message.chat.id, pic)
         except KeyError:
             text = (
                 'Что-то пошло не так. '
                 'Попробуйте выбрать водохранилище ещё раз.')
             bot.delete_message(call.message.chat.id, call.message.message_id)
             bot.send_message(call.message.chat.id, text)
+            bot.send_message(ADMIN_ID, text)
 
     else:
         text = 'Упс.. похоже я не знаю ответ.'
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, text)
+        bot.send_message(ADMIN_ID, text)
+
+
+# Inputing period manually
+@bot.message_handler(regexp='^[0-3][0-9][.][01][0-9][.][12][09][0-9][0-9]$')
+def manually_plot(message):
+    if ('res' and 'date1') in choice:
+        res = choice['res']
+        date1 = choice['date1']
+        try:
+            date2 = datetime.strptime(message.text, '%d.%m.%Y')
+            date2 = datetime.date(date2)
+            if date1 < date2:
+                pic, answer, is_success = plot(res, date1, date2)
+            else:
+                pic, answer, is_success = plot(res, date2, date1)
+            try:
+                bot.delete_message(
+                    message.chat.id,
+                    message.reply_to_message.message_id,
+                )
+            except AttributeError:
+                bot.send_message(ADMIN_ID, text='Error deleting a message')
+            finally:
+                bot.delete_message(message.chat.id, message.message_id)
+                bot.send_message(
+                    message.chat.id,
+                    answer,
+                    reply_markup=main_kbrd,
+                )
+                if is_success:
+                    bot.send_photo(message.chat.id, pic)
+                    with open('level.csv', 'rb') as csv:
+                        bot.send_document(message.chat.id, csv)
+            choice.clear()
+        except ValueError:
+            text = 'Ошибка в дате, попробуйте ещё раз в формате dd.mm.yyyy'
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(ADMIN_ID, text=f'{text}. date2: {message.text}')
+            bot.send_message(message.chat.id, text, reply_markup=ForceReply())
+    elif 'res' in choice:
+        try:
+            date1 = datetime.strptime(message.text, '%d.%m.%Y')
+            date1 = datetime.date(date1)
+            choice['date1'] = date1
+            text = 'Введите вторую дату периода в формате dd.mm.yyyy'
+            try:
+                bot.delete_message(
+                    message.chat.id,
+                    message.reply_to_message.message_id,
+                )
+            except AttributeError:
+                bot.send_message(ADMIN_ID, text='Error deleting a message')
+            finally:
+                bot.delete_message(message.chat.id, message.message_id)
+                bot.send_message(
+                    message.chat.id,
+                    text,
+                    reply_markup=ForceReply(),
+                )
+        except ValueError:
+            text = 'Ошибка в дате, попробуйте ещё раз в формате dd.mm.yyyy'
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(ADMIN_ID, text=f'{text}. date1: {message.text}')
+            bot.send_message(message.chat.id, text, reply_markup=ForceReply())
+    else:
+        text = 'Сначала выберите водохранилище'
+        bot.delete_message(message.chat.id, message.message_id)
+        bot.send_message(message.chat.id, text)
+
+
+# Choice of reservoir
+@bot.message_handler(content_types=['text'])
+def list_reservoirs(message):
+    keyboard = InlineKeyboardMarkup()
+    for r in sorted(res_param):
+        button = InlineKeyboardButton(
+            res_param[r][0],
+            callback_data=f'reservoir {str(r)}',
+        )
+        keyboard.add(button)
+    text = ('Выберите водохранилище, чтобы построить'
+            'график уровня верхнего бьефа.')
+    if message.text.lower() == 'показать список':
+        bot.delete_message(message.chat.id, message.message_id)
+        bot.send_message(message.chat.id, text, reply_markup=keyboard)
 
 
 bot.polling()
