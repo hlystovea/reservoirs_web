@@ -1,4 +1,4 @@
-import re
+﻿import re
 import sqlite3
 import time
 from datetime import datetime
@@ -17,10 +17,10 @@ def parcing_bwu():
     parcings_levels = soup.find_all(string=re.compile('верхний бьеф'))
     parcings_flow1 = soup.find_all(string=re.compile('приток [0-9]'))
     parcings_flow2 = soup.find_all(string=re.compile('приток общий'))
-    for z in range(len(parcings_flow1)):
-        print(parcings_flow1[z])
-    for z in range(len(parcings_flow2)):
-        print(parcings_flow2[z])
+    #for z in range(len(parcings_flow1)):
+        #print(parcings_flow1[z])
+    #for z in range(len(parcings_flow2)):
+        #print(parcings_flow2[z])
     parcings_dates = soup.find_all(
         string=re.compile('[0-3][0-9][.][01][0-9][.][2][0][2-9][0-9].[г.]')
         )
@@ -44,8 +44,8 @@ def parcing_bwu():
             level = float(level.replace(',', '.'))
             values.append(level)
             val.append(avg_flow)
-        print(val)
-        print(values)
+        #print(val)
+        #print(values)
         try:
             cursor.execute(
                 'INSERT INTO uvb VALUES(?, ?, ?, ?, ?, ?, ?);',
