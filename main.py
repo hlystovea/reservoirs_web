@@ -42,10 +42,10 @@ def query_handler(call):
         res = int(call.data.split()[1])
         choice['res'] = res
 
-        week = InlineKeyboardButton(text='Неделя', callback_data='fixed 7')
-        month = InlineKeyboardButton(text='Месяц', callback_data='fixed 30')
-        month3 = InlineKeyboardButton(text='3 месяца', callback_data='fixed 90') # noqa
-        year = InlineKeyboardButton(text='Год', callback_data='fixed 365')
+        week = InlineKeyboardButton(text='Месяц', callback_data='fixed 30')
+        month = InlineKeyboardButton(text='Пол года', callback_data='fixed 183') # noqa
+        month3 = InlineKeyboardButton(text='Год', callback_data='fixed 365')
+        year = InlineKeyboardButton(text='Всё время', callback_data='fixed 10000') # noqa
         manually = InlineKeyboardButton(text='Ввести даты вручную', callback_data='manually') # noqa
 
         keyboard = InlineKeyboardMarkup()
@@ -137,7 +137,7 @@ def manually_plot(message):
             bot.send_message(message.chat.id, text, reply_markup=ForceReply())
     elif 'res' in choice:
         try:
-            date1 = datetime.strptime(message.text, '%d.%m.%Y')
+            date1 = message.text
             date1 = datetime.date(date1)
             choice['date1'] = date1
             text = 'Введите вторую дату периода в формате dd.mm.yyyy'

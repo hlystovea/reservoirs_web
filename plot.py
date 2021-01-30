@@ -16,21 +16,26 @@ res_param = {
     6: ('Богучанское водохранилище', 209.5, 208.0, 207.0),
 }
 
+column_name = {
+    1: 'sayany',
+    2: 'mayna',
+    3: 'kras',
+    4: 'bratsk',
+    5: 'ilimsk',
+    6: 'boguchany',
+}
 
-def plot(res, time1, time2):
-    x = []
-    y = []
+
+def plot(res, date1, date2):
     conn = sqlite3.connect('levels.sqlite')
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM uvb WHERE date BETWEEN :time1 AND :time2 ORDER BY date",
-        {"time1": time1, "time2": time2}
-        )
+    sql_query = f'SELECT date, {column_name[res]} FROM uvb WHERE {column_name[res]} IS NOT NULL AND date BETWEEN :date1 AND :date2 ORDER BY date'
+    cursor.execute(sql_query, {'date1': date1, 'date2': date2})
     sample = cursor.fetchall()
 
     # Формируем списки с координатами
     x = [value[0] for value in sample]
-    y = [value[res] for value in sample]
+    y = [value[1] for value in sample]
     dates = [datetime.strptime(d, '%Y-%m-%d') for d in x]
 
     # Определяем уровни ФПУ, НПУ, УМО
@@ -43,7 +48,7 @@ def plot(res, time1, time2):
     try:
         d = dates[-1] - dates[0]
         if d.days > 7:
-            major_ticker = int(d.days/6)
+            major_ticker = int(d.days/7)
     except IndexError:
         pass
 
@@ -53,7 +58,7 @@ def plot(res, time1, time2):
     ax.plot(dates, y, color=(0, 0.4, 0.9, 0.7), linewidth=0.8)
     ax.set_title(
         f'{res_param[res][0]}\nФПУ={FPU}, НПУ={NPU}, УМО={UMO}',
-        fontsize=10
+        fontsize=10,
         )
     ax.set_ylabel('Высота над уровнем моря, м', fontsize=9)
     ax.grid(True, 'major', 'both')
@@ -97,4 +102,4 @@ def save_csv(x, y):
 
 
 if __name__ == '__main__':
-    plot(1, '2020-01-01', '2020-12-31')
+    plot(3, '2014-05-12', '2020-12-31')
