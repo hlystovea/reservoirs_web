@@ -137,7 +137,7 @@ def manually_plot(message):
             bot.send_message(message.chat.id, text, reply_markup=ForceReply())
     elif 'res' in choice:
         try:
-            date1 = message.text
+            date1 = datetime.strptime(message.text, '%d.%m.%Y')
             date1 = datetime.date(date1)
             choice['date1'] = date1
             text = 'Введите вторую дату периода в формате dd.mm.yyyy'
