@@ -1,19 +1,36 @@
 import os
-from datetime import date, datetime, timedelta
+import re
+from datetime import date, timedelta
 
 import telebot
 from telebot.types import (ForceReply, InlineKeyboardButton,
                            InlineKeyboardMarkup, ReplyKeyboardMarkup)
 
-from plot import plot, res_param
+from utils import Plotter, Reservoir, TimePeriod, res_param
 
-ADMIN_ID = 490603652
-TOKEN = os.environ.get('BOT_BWU')
+TOKEN = os.environ['BOT_BWU']
 
 bot = telebot.TeleBot(TOKEN)
 
-main_kbrd = ReplyKeyboardMarkup(True, selective=True)
-main_kbrd.row('Показать список')
+start_keyboard = ReplyKeyboardMarkup(True, selective=True)
+start_keyboard.row('Показать список')
+
+res_keyboard = InlineKeyboardMarkup()
+for r in sorted(res_param):
+    button = InlineKeyboardButton(
+        res_param[r][0],
+        callback_data=f'reservoir {r}',
+    )
+    res_keyboard.add(button)
+
+time_keyboard = InlineKeyboardMarkup()
+week = InlineKeyboardButton(text='Месяц', callback_data='fixed 30')
+month = InlineKeyboardButton(text='Пол года', callback_data='fixed 183')
+month3 = InlineKeyboardButton(text='Год', callback_data='fixed 365')
+year = InlineKeyboardButton(text='Всё время', callback_data='fixed 10000')
+manually = InlineKeyboardButton(text='Ввести даты вручную', callback_data='manually') # noqa
+info = InlineKeyboardButton(text='Вывести информацию о ГЭС', callback_data='get_info') # noqa
+time_keyboard.row(week, month, month3, year).add(manually).add(info)
 
 choice = {}
 
@@ -28,54 +45,67 @@ def start(message):
     bot.send_message(
         message.chat.id,
         text,
-        reply_markup=main_kbrd,
+        reply_markup=start_keyboard,
         parse_mode='Markdown',
         disable_web_page_preview=True,
     )
 
 
+@bot.message_handler(commands=['stat'])
+def statistic(message):
+    period = TimePeriod('01.01.1990')
+    pic = Plotter.plot_statistics(period)
+    bot.delete_message(message.chat.id, message.message_id)
+    bot.send_photo(message.chat.id, pic)
+
+
 # Choice of period and plotting
 @bot.callback_query_handler(func=lambda call: True)
 def query_handler(call):
-    if 'reservoir' in call.data:
+    if 'info' in call.data:
         bot.answer_callback_query(call.id)
-        res = int(call.data.split()[1])
+        res = Reservoir(choice['res'])
+        res.add_statistic()
+        text = 'Раздел находится в разработке.'
+        bot.edit_message_text(
+            text,
+            call.message.chat.id,
+            call.message.message_id,
+        )
+        choice.clear()
+    elif 'reservoir' in call.data:
+        res = call.data.split()[1]
         choice['res'] = res
-
-        week = InlineKeyboardButton(text='Месяц', callback_data='fixed 30')
-        month = InlineKeyboardButton(text='Пол года', callback_data='fixed 183') # noqa
-        month3 = InlineKeyboardButton(text='Год', callback_data='fixed 365')
-        year = InlineKeyboardButton(text='Всё время', callback_data='fixed 10000') # noqa
-        manually = InlineKeyboardButton(text='Ввести даты вручную', callback_data='manually') # noqa
-
-        keyboard = InlineKeyboardMarkup()
-        keyboard.row(week, month, month3, year).add(manually)
-
-        text1 = res_param[res][0]
+        bot.answer_callback_query(call.id)
+        text1 = f'{res_param[res][0]}:'
         text2 = 'Выберите период, за который необходимо построить график:'
         bot.edit_message_text(
             text1,
             call.message.chat.id,
             call.message.message_id,
         )
-        bot.send_message(call.message.chat.id, text2, reply_markup=keyboard)
-
+        bot.send_message(
+            call.message.chat.id,
+            text2,
+            reply_markup=time_keyboard
+        )
     elif 'manually' in call.data:
-        text = 'Введите первую дату периода в формате dd.mm.yyyy'
+        text = 'Введите начало и конец периода через пробел в формате dd.mm.yyyy'
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(
             call.message.chat.id,
             text,
             reply_markup=ForceReply())
-
     elif 'fixed' in call.data:
         bot.answer_callback_query(call.id, text='Уже рисую..')
         days = int(call.data.split()[1])
         date2 = date.today()
         date1 = date2 - timedelta(days)
+        period = TimePeriod(date1.isoformat(), date2.isoformat(), date_format='%Y-%m-%d')
         try:
-            res = choice['res']
-            pic, answer, is_success = plot(res, date1, date2)
+            res = Reservoir(choice['res'])
+            res.add_statistic()
+            pic, answer, is_success = Plotter.plot_levels(res, period)
             bot.edit_message_text(
                 answer,
                 call.message.chat.id,
@@ -89,41 +119,43 @@ def query_handler(call):
                 'Попробуйте выбрать водохранилище ещё раз.')
             bot.delete_message(call.message.chat.id, call.message.message_id)
             bot.send_message(call.message.chat.id, text)
-            bot.send_message(ADMIN_ID, text)
-
+        choice.clear()
     else:
         text = 'Упс.. похоже я не знаю ответ.'
         bot.delete_message(call.message.chat.id, call.message.message_id)
         bot.send_message(call.message.chat.id, text)
-        bot.send_message(ADMIN_ID, text)
 
 
 # Inputing period manually
-@bot.message_handler(regexp='^[0-3][0-9][.][01][0-9][.][12][09][0-9][0-9]$')
+@bot.message_handler(regexp='[0-3][0-9][.][01][0-9][.][12][09][0-9][0-9]')
 def manually_plot(message):
-    if ('res' and 'date1') in choice:
-        res = choice['res']
-        date1 = choice['date1']
+    if 'res' in choice:
         try:
-            date2 = datetime.strptime(message.text, '%d.%m.%Y')
-            date2 = datetime.date(date2)
-            if date1 < date2:
-                pic, answer, is_success = plot(res, date1, date2)
-            else:
-                pic, answer, is_success = plot(res, date2, date1)
+            dates = re.findall(
+                r'[0-3][0-9][.][01][0-9][.][12][09][0-9][0-9]',
+                message.text
+            )
+            date1 = dates[0]
+            date2 = None
+            if len(dates) > 1:
+                date2 = dates[-1]
+            period = TimePeriod(date1, date2, date_format='%d.%m.%Y')
+            res = Reservoir(choice['res'])
+            res.add_statistic()
+            pic, answer, is_success = Plotter.plot_levels(res, period)
             try:
                 bot.delete_message(
                     message.chat.id,
                     message.reply_to_message.message_id,
                 )
             except AttributeError:
-                bot.send_message(ADMIN_ID, text='Error deleting a message')
+                pass
             finally:
                 bot.delete_message(message.chat.id, message.message_id)
                 bot.send_message(
                     message.chat.id,
                     answer,
-                    reply_markup=main_kbrd,
+                    reply_markup=start_keyboard,
                 )
                 if is_success:
                     bot.send_photo(message.chat.id, pic)
@@ -133,32 +165,6 @@ def manually_plot(message):
         except ValueError:
             text = 'Ошибка в дате, попробуйте ещё раз в формате dd.mm.yyyy'
             bot.delete_message(message.chat.id, message.message_id)
-            bot.send_message(ADMIN_ID, text=f'{text}. date2: {message.text}')
-            bot.send_message(message.chat.id, text, reply_markup=ForceReply())
-    elif 'res' in choice:
-        try:
-            date1 = datetime.strptime(message.text, '%d.%m.%Y')
-            date1 = datetime.date(date1)
-            choice['date1'] = date1
-            text = 'Введите вторую дату периода в формате dd.mm.yyyy'
-            try:
-                bot.delete_message(
-                    message.chat.id,
-                    message.reply_to_message.message_id,
-                )
-            except AttributeError:
-                bot.send_message(ADMIN_ID, text='Error deleting a message')
-            finally:
-                bot.delete_message(message.chat.id, message.message_id)
-                bot.send_message(
-                    message.chat.id,
-                    text,
-                    reply_markup=ForceReply(),
-                )
-        except ValueError:
-            text = 'Ошибка в дате, попробуйте ещё раз в формате dd.mm.yyyy'
-            bot.delete_message(message.chat.id, message.message_id)
-            bot.send_message(ADMIN_ID, text=f'{text}. date1: {message.text}')
             bot.send_message(message.chat.id, text, reply_markup=ForceReply())
     else:
         text = 'Сначала выберите водохранилище'
@@ -169,18 +175,10 @@ def manually_plot(message):
 # Choice of reservoir
 @bot.message_handler(content_types=['text'])
 def list_reservoirs(message):
-    keyboard = InlineKeyboardMarkup()
-    for r in sorted(res_param):
-        button = InlineKeyboardButton(
-            res_param[r][0],
-            callback_data=f'reservoir {str(r)}',
-        )
-        keyboard.add(button)
-    text = ('Выберите водохранилище, чтобы построить'
-            'график уровня верхнего бьефа.')
     if message.text.lower() == 'показать список':
+        text = ('Выберите водохранилище')
         bot.delete_message(message.chat.id, message.message_id)
-        bot.send_message(message.chat.id, text, reply_markup=keyboard)
+        bot.send_message(message.chat.id, text, reply_markup=res_keyboard)
 
 
 bot.polling()
