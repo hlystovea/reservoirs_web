@@ -31,13 +31,12 @@ def parcing_bwu():
     cursor = conn.cursor()
 
     for i in range(0, 5):  # Итерации по 5 строкам парсинга
-        date = parcings_dates[i].split()[0]
-        date = datetime.strptime(date, '%d.%m.%Y')
-        date = datetime.date(date)
+        date_str = parcings_dates[i].split()[0]
+        date = datetime.strptime(date_str, '%d.%m.%Y').timestamp()
         values = []
         val = []
-        values.append(str(date))
-        val.append(str(date))
+        values.append(date)
+        val.append(date)
         for n in range(0, 6):  # Подготовка строки для записи в бд
             level = (parcings_levels[i*6+n].split()[3])
             avg_flow = (parcings_levels[i*6+n].split()[13])
@@ -52,7 +51,7 @@ def parcing_bwu():
                 tuple(values)
                 )
             conn.commit()
-            print(f'Добавлены данные за {date}')
+            print(f'Добавлены данные за {date_str}')
         except sqlite3.IntegrityError:
             continue
     cursor.close()
