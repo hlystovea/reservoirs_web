@@ -7,3 +7,5 @@ levels.sqlite
 parcing.bat
 main.bat
 .vscode/settings.json
+reload_db.py
+levels_new.sqlite
