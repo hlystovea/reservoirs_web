@@ -143,6 +143,7 @@ def manually_plot(message):
             res = Reservoir(choice['res'])
             res.add_statistic()
             pic, answer, is_success = Plotter.plot_levels(res, period)
+            Plotter.save_csv(res, period)
             try:
                 bot.delete_message(
                     message.chat.id,
