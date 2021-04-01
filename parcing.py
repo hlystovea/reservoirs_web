@@ -20,9 +20,9 @@ def parcing_bwu():
     inflow_kras = inflow_kras_bratsk[0::2]
     inflow_bratsk = inflow_kras_bratsk[1::2]
     parcings_dates = soup.find_all(
-        string=re.compile('[0-3][0-9][.][01][0-9][.][2][0][2-9][0-9].[г.]')
+        string=re.compile('[0-3]?[0-9][.][01][0-9][.][2][0][2-9][0-9].[г.]')
         )
-
+    print(parcings_dates)
     # Добавление данных об уровнях водохранилищ в базу данных
     # Подключение к базе данных
     conn = sqlite3.connect('levels.sqlite')
