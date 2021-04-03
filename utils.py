@@ -100,6 +100,30 @@ class Reservoir():
         connect.close()
         return coordinates
 
+    def get_outflows(self, period):
+        date1 = period.date1
+        date2 = period.date2
+        connect = sqlite3.connect('levels.sqlite')
+        cursor = connect.cursor()
+        sql_query = f'SELECT date, {self.name} FROM outflow WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2 ORDER BY date'
+        cursor.execute(sql_query, {'date1': date1, 'date2': date2})
+        coordinates = cursor.fetchall()
+        cursor.close()
+        connect.close()
+        return coordinates
+
+    def get_inflows(self, period):
+        date1 = period.date1
+        date2 = period.date2
+        connect = sqlite3.connect('levels.sqlite')
+        cursor = connect.cursor()
+        sql_query = f'SELECT date, {self.name} FROM inflow WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2 ORDER BY date'
+        cursor.execute(sql_query, {'date1': date1, 'date2': date2})
+        coordinates = cursor.fetchall()
+        cursor.close()
+        connect.close()
+        return coordinates
+
     def __str__(self):
         return self.name
 
@@ -129,7 +153,11 @@ class Plotter():
         ax.set_ylabel('Высота над уровнем моря, м', fontsize=9)
         ax.grid(True, 'major', 'both')
         ax.legend(['УВБ (м)'], fontsize=9)
-        locator = mdates.AutoDateLocator(minticks=7, maxticks=12, interval_multiples=False)
+        locator = mdates.AutoDateLocator(
+            minticks=7,
+            maxticks=12,
+            interval_multiples=False,
+        )
         formatter = mdates.DateFormatter('%d.%m.%Y')
         ax.xaxis.set_major_locator(locator)
         ax.xaxis.set_major_formatter(formatter)
@@ -200,9 +228,104 @@ class Plotter():
 
         return pic
 
+    @staticmethod
+    def plot_outflows(reservoir, timeperiod):
+        # Формируем списки с координатами
+        coordinates = reservoir.get_outflows(timeperiod)
+        x = [value[0] for value in coordinates]
+        y = [value[1] for value in coordinates]
+        dates = [dt.datetime.fromtimestamp(d) for d in x]
+        print(y)
+
+        # Построение графика
+        fig = plt.figure(figsize=(6, 4))
+        ax = fig.add_subplot(111)
+        ax.plot(dates, y, color=(0, 0.4, 0.9, 0.7), linewidth=0.8)
+        ax.set_title(f'{res_param[reservoir.name][0]}', fontsize=10)
+        ax.set_ylabel('Q, м\u00b3/с', fontsize=9)
+        ax.grid(True, 'major', 'both')
+        ax.legend(['Сброс (м\u00b3/c)'], fontsize=9)
+        locator = mdates.AutoDateLocator(
+            minticks=7,
+            maxticks=12,
+            interval_multiples=False,
+        )
+        formatter = mdates.DateFormatter('%d.%m.%Y')
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(formatter)
+        ax.tick_params('x', labelrotation=20, labelsize=8)
+        ax.tick_params('y', labelsize=8)
+
+        # Сохранение файла
+        pic = io.BytesIO()
+        plt.savefig(pic, format='png')
+        plt.close
+        pic.seek(0)
+
+        try:
+            date1 = dt.datetime.fromtimestamp(coordinates[0][0])
+            date1 = date1.strftime('%d.%m.%Y')
+            date2 = dt.datetime.fromtimestamp(coordinates[-1][0])
+            date2 = date2.strftime('%d.%m.%Y')
+            text = f'График за период с {date1} по {date2}'
+            is_success = True
+        except IndexError:
+            text = 'Нет данных за указанный период времени'
+            is_success = False
+        finally:
+            return (pic, text, is_success)
+
+    @staticmethod
+    def plot_inflows(reservoir, timeperiod):
+        # Формируем списки с координатами
+        coordinates = reservoir.get_inflows(timeperiod)
+        x = [value[0] for value in coordinates]
+        y = [value[1] for value in coordinates]
+        dates = [dt.datetime.fromtimestamp(d) for d in x]
+        print(y)
+
+        # Построение графика
+        fig = plt.figure(figsize=(6, 4))
+        ax = fig.add_subplot(111)
+        ax.plot(dates, y, color=(0, 0.4, 0.9, 0.7), linewidth=0.8)
+        ax.set_title(f'{res_param[reservoir.name][0]}', fontsize=10)
+        ax.set_ylabel('Q, м\u00b3/с', fontsize=9)
+        ax.grid(True, 'major', 'both')
+        ax.legend(['Приток (м\u00b3/c)'], fontsize=9)
+        locator = mdates.AutoDateLocator(
+            minticks=7,
+            maxticks=12,
+            interval_multiples=False,
+        )
+        formatter = mdates.DateFormatter('%d.%m.%Y')
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(formatter)
+        ax.tick_params('x', labelrotation=20, labelsize=8)
+        ax.tick_params('y', labelsize=8)
+
+        # Сохранение файла
+        pic = io.BytesIO()
+        plt.savefig(pic, format='png')
+        plt.close
+        pic.seek(0)
+
+        try:
+            date1 = dt.datetime.fromtimestamp(coordinates[0][0])
+            date1 = date1.strftime('%d.%m.%Y')
+            date2 = dt.datetime.fromtimestamp(coordinates[-1][0])
+            date2 = date2.strftime('%d.%m.%Y')
+            text = f'График за период с {date1} по {date2}'
+            is_success = True
+        except IndexError:
+            text = 'Нет данных за указанный период времени'
+            is_success = False
+        finally:
+            return (pic, text, is_success)
+
 if __name__ == '__main__':
-    period = TimePeriod(date1='01.02.2020')
+    period = TimePeriod(date1='01.03.2021')
     res = Reservoir(name='sayany')
+    Plotter.plot_inflows(res, period)
     Plotter.plot_levels(res, period)
     Plotter.save_csv(res, period)
     Plotter.plot_statistics(period)
