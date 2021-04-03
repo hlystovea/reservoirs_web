@@ -100,7 +100,7 @@ class Reservoir():
         connect.close()
         return coordinates
 
-    def get_outflows(self, period):
+    def get_outflow(self, period):
         date1 = period.date1
         date2 = period.date2
         connect = sqlite3.connect('levels.sqlite')
@@ -112,7 +112,7 @@ class Reservoir():
         connect.close()
         return coordinates
 
-    def get_inflows(self, period):
+    def get_inflow(self, period):
         date1 = period.date1
         date2 = period.date2
         connect = sqlite3.connect('levels.sqlite')
@@ -154,7 +154,7 @@ class Plotter():
         ax.grid(True, 'major', 'both')
         ax.legend(['УВБ (м)'], fontsize=9)
         locator = mdates.AutoDateLocator(
-            minticks=7,
+            minticks=1,
             maxticks=12,
             interval_multiples=False,
         )
@@ -229,24 +229,23 @@ class Plotter():
         return pic
 
     @staticmethod
-    def plot_outflows(reservoir, timeperiod):
+    def plot_outflow(reservoir, timeperiod):
         # Формируем списки с координатами
-        coordinates = reservoir.get_outflows(timeperiod)
+        coordinates = reservoir.get_outflow(timeperiod)
         x = [value[0] for value in coordinates]
         y = [value[1] for value in coordinates]
         dates = [dt.datetime.fromtimestamp(d) for d in x]
-        print(y)
 
         # Построение графика
         fig = plt.figure(figsize=(6, 4))
         ax = fig.add_subplot(111)
         ax.plot(dates, y, color=(0, 0.4, 0.9, 0.7), linewidth=0.8)
-        ax.set_title(f'{res_param[reservoir.name][0]}', fontsize=10)
+        ax.set_title(f'{res_param[reservoir.name][0]}\n', fontsize=10)
         ax.set_ylabel('Q, м\u00b3/с', fontsize=9)
         ax.grid(True, 'major', 'both')
-        ax.legend(['Сброс (м\u00b3/c)'], fontsize=9)
+        ax.legend(['Средний сброс (м\u00b3/c)'], fontsize=9)
         locator = mdates.AutoDateLocator(
-            minticks=7,
+            minticks=1,
             maxticks=12,
             interval_multiples=False,
         )
@@ -276,24 +275,23 @@ class Plotter():
             return (pic, text, is_success)
 
     @staticmethod
-    def plot_inflows(reservoir, timeperiod):
+    def plot_inflow(reservoir, timeperiod):
         # Формируем списки с координатами
-        coordinates = reservoir.get_inflows(timeperiod)
+        coordinates = reservoir.get_inflow(timeperiod)
         x = [value[0] for value in coordinates]
         y = [value[1] for value in coordinates]
         dates = [dt.datetime.fromtimestamp(d) for d in x]
-        print(y)
 
         # Построение графика
         fig = plt.figure(figsize=(6, 4))
         ax = fig.add_subplot(111)
         ax.plot(dates, y, color=(0, 0.4, 0.9, 0.7), linewidth=0.8)
-        ax.set_title(f'{res_param[reservoir.name][0]}', fontsize=10)
+        ax.set_title(f'{res_param[reservoir.name][0]}\n', fontsize=10)
         ax.set_ylabel('Q, м\u00b3/с', fontsize=9)
         ax.grid(True, 'major', 'both')
         ax.legend(['Приток (м\u00b3/c)'], fontsize=9)
         locator = mdates.AutoDateLocator(
-            minticks=7,
+            minticks=1,
             maxticks=12,
             interval_multiples=False,
         )
@@ -325,7 +323,7 @@ class Plotter():
 if __name__ == '__main__':
     period = TimePeriod(date1='01.03.2021')
     res = Reservoir(name='sayany')
-    Plotter.plot_inflows(res, period)
+    Plotter.plot_inflow(res, period)
     Plotter.plot_levels(res, period)
     Plotter.save_csv(res, period)
     Plotter.plot_statistics(period)

@@ -30,7 +30,9 @@ month3 = InlineKeyboardButton(text='Год', callback_data='fixed 365')
 year = InlineKeyboardButton(text='Всё время', callback_data='fixed 10000')
 manually = InlineKeyboardButton(text='Ввести даты вручную', callback_data='manually') # noqa
 info = InlineKeyboardButton(text='Вывести информацию о ГЭС', callback_data='get_info') # noqa
-time_keyboard.row(week, month, month3, year).add(manually).add(info)
+inflow = InlineKeyboardButton(text='Построить график притока', callback_data='inflow') # noqa
+outflow = InlineKeyboardButton(text='Построить график сброса', callback_data='outflow') # noqa
+time_keyboard.row(week, month, month3, year).add(manually).add(info).add(inflow).add(outflow) # noqa
 
 choice = {}
 
@@ -106,6 +108,48 @@ def query_handler(call):
             res = Reservoir(choice['res'])
             res.add_statistic()
             pic, answer, is_success = Plotter.plot_levels(res, period)
+            bot.edit_message_text(
+                answer,
+                call.message.chat.id,
+                call.message.message_id,
+            )
+            if is_success:
+                bot.send_photo(call.message.chat.id, pic)
+        except KeyError:
+            text = (
+                'Что-то пошло не так. '
+                'Попробуйте выбрать водохранилище ещё раз.')
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.send_message(call.message.chat.id, text)
+        choice.clear()
+    elif 'inflow' in call.data:
+        bot.answer_callback_query(call.id, text='Уже рисую..')
+        period = TimePeriod('01.01.1990')
+        try:
+            res = Reservoir(choice['res'])
+            res.add_statistic()
+            pic, answer, is_success = Plotter.plot_inflow(res, period)
+            bot.edit_message_text(
+                answer,
+                call.message.chat.id,
+                call.message.message_id,
+            )
+            if is_success:
+                bot.send_photo(call.message.chat.id, pic)
+        except KeyError:
+            text = (
+                'Что-то пошло не так. '
+                'Попробуйте выбрать водохранилище ещё раз.')
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.send_message(call.message.chat.id, text)
+        choice.clear()
+    elif 'outflow' in call.data:
+        bot.answer_callback_query(call.id, text='Уже рисую..')
+        period = TimePeriod('01.01.1990')
+        try:
+            res = Reservoir(choice['res'])
+            res.add_statistic()
+            pic, answer, is_success = Plotter.plot_outflow(res, period)
             bot.edit_message_text(
                 answer,
                 call.message.chat.id,
