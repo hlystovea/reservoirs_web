@@ -38,7 +38,6 @@ def parcing_bwu():
         levels.append(date)
         outflows = []
         outflows.append(date)
-        inflows = []
         inflows = [
             date,
             int(inflow_sayan[i].split()[2]),
@@ -52,19 +51,22 @@ def parcing_bwu():
             outflow = int(data[i*6+n].split()[13])
             outflows.append(outflow)
         try:
-            cursor.execute(
-                'INSERT INTO uvb VALUES(?, ?, ?, ?, ?, ?, ?);',
-                tuple(levels),
-                )
-            cursor.execute(
-                'INSERT INTO outflow VALUES(?, ?, ?, ?, ?, ?, ?);',
-                tuple(outflows),
-                )
-            cursor.execute(
-                'INSERT INTO inflow VALUES(?, ?, ?, ?);',
-                tuple(inflows),
-                )
-        except sqlite3.IntegrityError as error:
+            sql_level = '''\
+                INSERT INTO uvb
+                VALUES(?, ?, ?, ?, ?, ?, ?)
+                '''
+            cursor.execute(sql_level, tuple(levels))
+            sql_outflow = '''\
+                INSERT INTO outflow
+                VALUES(?, ?, ?, ?, ?, ?, ?)
+                '''
+            cursor.execute(sql_outflow, tuple(outflows))
+            sql_inflow = '''\
+                INSERT INTO inflow (date, sayany, kras, bratsk)
+                VALUES (?, ?, ?, ?)
+                '''
+            cursor.execute(sql_inflow, tuple(inflows))
+        except sqlite3.IntegrityError:
             continue
         else:
             print(f'Добавлены данные за {date_str}')
