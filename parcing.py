@@ -5,6 +5,7 @@ from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
+from progress.spinner import Spinner
 
 
 def db_saver(records: dict):
@@ -30,13 +31,15 @@ def db_saver(records: dict):
         except sqlite3.IntegrityError:
             continue
         else:
-            print(f'Добавлены данные за {records[0][0]}')
+            date = datetime.fromtimestamp(records["levels"][i][0])
+            print(f'Добавлены данные за {date.isoformat(" ")}')
             conn.commit()
     cursor.close()
     conn.close()
 
 
-def parcing(url: str) -> dict:
+def parcing() -> dict:
+    url = 'http://enbvu.ru/i03_deyatelnost/i03.07_vdho.php'
     page = requests.get(url)
     soup = BeautifulSoup(page.text, 'html.parser')
 
@@ -88,12 +91,16 @@ def parcing(url: str) -> dict:
     return records
 
 
-def timer():
+def sleeper(sleep_time: int):
+    spinner = Spinner('Sleep ')
+    count = 0
     while True:
-        url = 'http://enbvu.ru/i03_deyatelnost/i03.07_vdho.php'
-        db_saver(parcing(url))
-        time.sleep(3000)
+        if count % sleep_time == 0:
+            db_saver(parcing())
+        spinner.next()
+        time.sleep(1)
+        count += 1
 
 
 if __name__ == '__main__':
-    timer()
+    sleeper(3000)
