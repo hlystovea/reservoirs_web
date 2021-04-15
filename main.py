@@ -1,5 +1,7 @@
 import os
 import re
+import requests
+import time
 from datetime import date, timedelta
 
 import telebot
@@ -226,4 +228,9 @@ def list_reservoirs(message):
         bot.send_message(message.chat.id, text, reply_markup=res_keyboard)
 
 
-bot.polling()
+while True:
+    try:
+        bot.polling(True)
+    except requests.exceptions.ConnectionError as e:
+        print(repr(e))
+        time.sleep(30)
