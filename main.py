@@ -1,18 +1,35 @@
+import logging
 import os
 import re
-import requests
 import time
 from datetime import date, timedelta
+from logging.handlers import RotatingFileHandler
 
+import requests
 import telebot
 from telebot.types import (ForceReply, InlineKeyboardButton,
                            InlineKeyboardMarkup, ReplyKeyboardMarkup)
 
 from utils import Plotter, Reservoir, TimePeriod, res_param
 
-TOKEN = os.environ['BOT_BWU']
+TOKEN = os.environ.get('BOT_BWU')
 
 bot = telebot.TeleBot(TOKEN)
+
+rotate_file_handler = RotatingFileHandler(
+    'log.log',
+    maxBytes=5000000,
+    backupCount=2,
+)
+console_out_hundler = logging.StreamHandler(
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(funcName)s: %(message)s',
+    handlers=[console_out_hundler, rotate_file_handler],
+)
+
 
 start_keyboard = ReplyKeyboardMarkup(True, selective=True)
 start_keyboard.row('Показать список')
@@ -228,9 +245,11 @@ def list_reservoirs(message):
         bot.send_message(message.chat.id, text, reply_markup=res_keyboard)
 
 
-while True:
-    try:
-        bot.polling(True)
-    except requests.exceptions.ConnectionError as e:
-        print(repr(e))
-        time.sleep(30)
+if __name__ == '__main__':
+    while True:
+        try:
+            logging.info('Start polling')
+            bot.polling()
+        except requests.exceptions.ConnectionError as error:
+            logging.error(repr(error))
+            time.sleep(30)
