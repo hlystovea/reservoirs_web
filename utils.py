@@ -7,6 +7,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
+
 ONE_DAY = 86400
 
 # Вспомогательный словарь с параметрами водохранилищ: ФПУ, НПУ, УМО
@@ -28,6 +29,7 @@ column_name = {
     6: 'boguchany',
 }
 
+
 class TimePeriod():
     def __init__(self, date1, date2=None, date_format='%d.%m.%Y'):
         date1 = dt.datetime.strptime(date1, date_format)
@@ -47,13 +49,22 @@ class TimePeriod():
         timestamp2 = self.date2 + ONE_DAY
         connect = sqlite3.connect('levels.sqlite')
         cursor = connect.cursor()
-        sql_query = 'SELECT reservoir, COUNT(timestamp) FROM statistic WHERE timestamp BETWEEN :timestamp1 AND :timestamp2 GROUP BY reservoir'
-        cursor.execute(sql_query, {'timestamp1': timestamp1, 'timestamp2': timestamp2})
+        sql_query = '''\
+            SELECT reservoir, COUNT(timestamp)
+            FROM statistic
+            WHERE timestamp BETWEEN :timestamp1 AND :timestamp2
+            GROUP BY reservoir'''
+        cursor.execute(
+            sql_query, {
+                'timestamp1': timestamp1,
+                'timestamp2': timestamp2,
+            },
+        )
         data = cursor.fetchall()
         cursor.close()
         connect.close()
         return data
-    
+
     @staticmethod
     def timestamp_to_format(timestamp, format='%d.%m.%Y'):
         return dt.datetime.fromtimestamp(timestamp).strftime(format)
@@ -81,8 +92,19 @@ class Reservoir():
         timestamp2 = period.date2 + ONE_DAY
         connect = sqlite3.connect('levels.sqlite')
         cursor = connect.cursor()
-        sql_query = 'SELECT timestamp FROM statistic WHERE reservoir=:name AND timestamp BETWEEN :timestamp1 AND :timestamp2 ORDER BY timestamp'
-        cursor.execute(sql_query, {'name': self.name, 'timestamp1': timestamp1, 'timestamp2': timestamp2})
+        sql_query = '''\
+            SELECT timestamp
+            FROM statistic
+            WHERE reservoir=:name
+            AND timestamp BETWEEN :timestamp1 AND :timestamp2
+            ORDER BY timestamp'''
+        cursor.execute(
+            sql_query, {
+                'name': self.name,
+                'timestamp1': timestamp1,
+                'timestamp2': timestamp2,
+            }
+        )
         data = cursor.fetchall()
         cursor.close()
         connect.close()
@@ -93,7 +115,11 @@ class Reservoir():
         date2 = period.date2
         connect = sqlite3.connect('levels.sqlite')
         cursor = connect.cursor()
-        sql_query = f'SELECT date, {self.name} FROM uvb WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2 ORDER BY date'
+        sql_query = f'''\
+            SELECT date, {self.name}
+            FROM uvb
+            WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2
+            ORDER BY date'''
         cursor.execute(sql_query, {'date1': date1, 'date2': date2})
         coordinates = cursor.fetchall()
         cursor.close()
@@ -105,7 +131,11 @@ class Reservoir():
         date2 = period.date2
         connect = sqlite3.connect('levels.sqlite')
         cursor = connect.cursor()
-        sql_query = f'SELECT date, {self.name} FROM outflow WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2 ORDER BY date'
+        sql_query = f'''\
+            SELECT date, {self.name}
+            FROM outflow
+            WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2
+            ORDER BY date'''
         cursor.execute(sql_query, {'date1': date1, 'date2': date2})
         coordinates = cursor.fetchall()
         cursor.close()
@@ -117,7 +147,11 @@ class Reservoir():
         date2 = period.date2
         connect = sqlite3.connect('levels.sqlite')
         cursor = connect.cursor()
-        sql_query = f'SELECT date, {self.name} FROM inflow WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2 ORDER BY date'
+        sql_query = f'''\
+            SELECT date, {self.name}
+            FROM inflow
+            WHERE {self.name} IS NOT NULL AND date BETWEEN :date1 AND :date2
+            ORDER BY date'''
         cursor.execute(sql_query, {'date1': date1, 'date2': date2})
         coordinates = cursor.fetchall()
         cursor.close()
@@ -211,10 +245,7 @@ class Plotter():
         fig = plt.figure(figsize=(6, 4))
         ax = fig.add_subplot(111)
         ax.bar(names, values, color=(0, 0.4, 0.9, 0.7))
-        ax.set_title(
-            f'Статистика запросов',
-            fontsize=10,
-            )
+        ax.set_title('Статистика запросов', fontsize=10)
         ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
         ax.set_ylabel('Количество', fontsize=9)
         ax.tick_params('x', labelsize=8)
@@ -319,6 +350,7 @@ class Plotter():
             is_success = False
         finally:
             return (pic, text, is_success)
+
 
 if __name__ == '__main__':
     period = TimePeriod(date1='01.03.2021')
