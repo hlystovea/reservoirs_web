@@ -226,12 +226,11 @@ def plotting_graph(graph):
     return pic, text, is_success
 
 
-bot.polling()
-'''if __name__ == '__main__':
+if __name__ == '__main__':
     while True:
         try:
             logging.info('Start polling')
             bot.polling()
         except requests.exceptions.ConnectionError as error:
             logging.error(repr(error))
-            time.sleep(30)'''
+            time.sleep(30)
