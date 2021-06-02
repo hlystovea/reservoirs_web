@@ -187,13 +187,11 @@ class Plotter():
         ax.set_ylabel('Высота над уровнем моря, м', fontsize=9)
         ax.grid(True, 'major', 'both')
         ax.legend(['УВБ (м)'], fontsize=9)
-        locator = mdates.AutoDateLocator(
-            minticks=1,
-            maxticks=12,
-            interval_multiples=False,
-        )
+        major_ticker = 1
+        if len(x) > 5:
+            major_ticker = len(x)//5
         formatter = mdates.DateFormatter('%d.%m.%Y')
-        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(major_ticker))
         ax.xaxis.set_major_formatter(formatter)
         ax.tick_params('x', labelrotation=20, labelsize=8)
         ax.tick_params('y', labelsize=8)
@@ -275,13 +273,11 @@ class Plotter():
         ax.set_ylabel('Q, м\u00b3/с', fontsize=9)
         ax.grid(True, 'major', 'both')
         ax.legend(['Средний сброс (м\u00b3/c)'], fontsize=9)
-        locator = mdates.AutoDateLocator(
-            minticks=1,
-            maxticks=12,
-            interval_multiples=False,
-        )
+        major_ticker = 1
+        if len(x) > 5:
+            major_ticker = len(x)//5
         formatter = mdates.DateFormatter('%d.%m.%Y')
-        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(major_ticker))
         ax.xaxis.set_major_formatter(formatter)
         ax.tick_params('x', labelrotation=20, labelsize=8)
         ax.tick_params('y', labelsize=8)
@@ -321,13 +317,11 @@ class Plotter():
         ax.set_ylabel('Q, м\u00b3/с', fontsize=9)
         ax.grid(True, 'major', 'both')
         ax.legend(['Приток (м\u00b3/c)'], fontsize=9)
-        locator = mdates.AutoDateLocator(
-            minticks=1,
-            maxticks=12,
-            interval_multiples=False,
-        )
+        major_ticker = 1
+        if len(x) > 5:
+            major_ticker = len(x)//5
         formatter = mdates.DateFormatter('%d.%m.%Y')
-        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(major_ticker))
         ax.xaxis.set_major_formatter(formatter)
         ax.tick_params('x', labelrotation=20, labelsize=8)
         ax.tick_params('y', labelsize=8)
