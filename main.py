@@ -12,7 +12,6 @@ from telebot.types import (InlineKeyboardButton, InlineKeyboardMarkup,
 
 from utils import Plotter, Reservoir, TimePeriod, res_param
 
-
 TOKEN = os.environ.get('BOT_BWU')
 
 bot = telebot.TeleBot(TOKEN)

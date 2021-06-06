@@ -7,7 +7,6 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-
 ONE_DAY = 86400
 
 # Вспомогательный словарь с параметрами водохранилищ: ФПУ, НПУ, УМО
