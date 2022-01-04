@@ -24,7 +24,7 @@ class WaterSituation(BaseModel):
     spillway: Optional[float]
 
     @root_validator(pre=True)
-    def check_fields(cls, values):
+    def check_fields(cls, values):  # noqa (N805)
         for key, value in values.items():
             if isinstance(value, str) and 'нет' in value:
                 values[key] = None

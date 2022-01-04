@@ -3,6 +3,7 @@ import os
 from typing import List, Optional
 
 import asyncpg
+from asyncpg import Record
 from pydantic import parse_obj_as
 
 from core.db.schemas import Reservoir, WaterSituation
@@ -42,7 +43,7 @@ async def insert_one(conn, obj: WaterSituation) -> asyncpg.Record:
     )
 
 
-async def insert_many(conn, objs: List[WaterSituation]) -> List[asyncpg.Record]:
+async def insert_many(conn, objs: List[WaterSituation]) -> List[Record]:
     return await conn.fetch(
         '''
         INSERT INTO water_situation (date, level, free_capacity,

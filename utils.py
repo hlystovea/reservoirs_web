@@ -172,16 +172,16 @@ class Plotter():
         dates = [dt.datetime.fromtimestamp(d) for d in x]
 
         # Определяем уровни ФПУ, НПУ, УМО
-        FPU = f'{res_param[reservoir.name][1]} м'
-        NPU = f'{res_param[reservoir.name][2]} м'
-        UMO = f'{res_param[reservoir.name][3]} м'
+        fpu = f'{res_param[reservoir.name][1]} м'
+        npu = f'{res_param[reservoir.name][2]} м'
+        umo = f'{res_param[reservoir.name][3]} м'
 
         # Построение графика
         fig = plt.figure(figsize=(6, 4))
         ax = fig.add_subplot(111)
         ax.plot(dates, y, color=(0, 0.4, 0.9, 0.7), linewidth=0.8)
         ax.set_title(
-            f'{res_param[reservoir.name][0]}\nФПУ={FPU}, НПУ={NPU}, УМО={UMO}',
+            f'{res_param[reservoir.name][0]}\nФПУ={fpu}, НПУ={npu}, УМО={umo}',
             fontsize=10,
         )
         ax.set_ylabel('Высота над уровнем моря, м', fontsize=9)
