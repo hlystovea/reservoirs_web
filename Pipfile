@@ -8,6 +8,7 @@ aiohttp = "*"
 pydantic = "*"
 bs4 = "*"
 asyncpg = "*"
+yoyo-migrations = "*"
 
 [dev-packages]
 
