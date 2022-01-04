@@ -23,7 +23,6 @@ services:
     image: hlystovea/reservoirs_bot:latest
     container_name: crawler
     restart: always
-    command: python3 crawler.py
     depends_on:
       - db
     env_file:
