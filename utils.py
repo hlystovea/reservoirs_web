@@ -189,7 +189,7 @@ class Plotter():
         ax.legend(['УВБ (м)'], fontsize=9)
         major_ticker = 1
         if len(x) > 5:
-            major_ticker = len(x)//5
+            major_ticker = len(x) // 5
         formatter = mdates.DateFormatter('%d.%m.%Y')
         ax.xaxis.set_major_locator(ticker.MultipleLocator(major_ticker))
         ax.xaxis.set_major_formatter(formatter)
@@ -275,7 +275,7 @@ class Plotter():
         ax.legend(['Средний сброс (м\u00b3/c)'], fontsize=9)
         major_ticker = 1
         if len(x) > 5:
-            major_ticker = len(x)//5
+            major_ticker = len(x) // 5
         formatter = mdates.DateFormatter('%d.%m.%Y')
         ax.xaxis.set_major_locator(ticker.MultipleLocator(major_ticker))
         ax.xaxis.set_major_formatter(formatter)
@@ -319,7 +319,7 @@ class Plotter():
         ax.legend(['Приток (м\u00b3/c)'], fontsize=9)
         major_ticker = 1
         if len(x) > 5:
-            major_ticker = len(x)//5
+            major_ticker = len(x) // 5
         formatter = mdates.DateFormatter('%d.%m.%Y')
         ax.xaxis.set_major_locator(ticker.MultipleLocator(major_ticker))
         ax.xaxis.set_major_formatter(formatter)

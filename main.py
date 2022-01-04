@@ -190,10 +190,10 @@ def manually_input_step(message):
         graph.period = period
         pic, text, is_success = plotting_graph(graph)
         if is_success:
-            bot.delete_message(message.chat.id, message.message_id-1)
+            bot.delete_message(message.chat.id, message.message_id - 1)
             bot.send_photo(message.chat.id, pic, text)
         else:
-            bot.delete_message(message.chat.id, message.message_id-1)
+            bot.delete_message(message.chat.id, message.message_id - 1)
             bot.reply_to(message, text)
     except (ValueError, IndexError) as error:
         logger.error(repr(error))
