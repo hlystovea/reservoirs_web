@@ -30,7 +30,7 @@ logging.basicConfig(
 
 async def get_list_dates_from(date: datetime.date):
     num_days = (datetime.date.today() - date).days + 1
-    dates = [date + datetime.timedelta(d) for d in range(1, num_days)]
+    dates = [date + datetime.timedelta(d) for d in range(num_days)]
     return dates
 
 
