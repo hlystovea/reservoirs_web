@@ -1,0 +1,34 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+beautifulsoup4 = "*"
+certifi = "*"
+chardet = "*"
+cycler = "*"
+idna = "*"
+kiwisolver = "*"
+matplotlib = "*"
+numpy = "*"
+progress = "*"
+pyparsing = "*"
+python-dateutil = "*"
+requests = "*"
+six = "*"
+soupsieve = "*"
+ujson = "*"
+urllib3 = "*"
+Pillow = "*"
+pyTelegramBotAPI = "*"
+psycopg2 = "*"
+pydantic = "*"
+bs4 = "*"
+asyncpg = "*"
+aiohttp = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 import requests
 import telebot
 from telebot.types import (InlineKeyboardButton, InlineKeyboardMarkup,
-                           ReplyKeyboardMarkup, ReplyKeyboardRemove)
+                           ReplyKeyboardMarkup)
 
 from utils import Plotter, Reservoir, TimePeriod, res_param
 
@@ -21,7 +21,7 @@ logger = telebot.logger
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter(
     '%(asctime)s %(levelname)s %(funcName)s - %(message)s')
-rf_handler = RotatingFileHandler('bot.log', maxBytes=5000000, backupCount=2)
+rf_handler = RotatingFileHandler('logs/bot.log', 5000000, 2)
 rf_handler.setFormatter(formatter)
 logger.addHandler(rf_handler)
 
