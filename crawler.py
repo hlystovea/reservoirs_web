@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+import time
 from logging.handlers import RotatingFileHandler
 from os import environ
 from typing import Dict, List
@@ -106,4 +107,6 @@ async def crawler():
 
 
 if __name__ == '__main__':
-    asyncio.run(crawler())
+    # asyncio.run(crawler())
+    while True:
+        time.sleep(10)
