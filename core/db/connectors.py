@@ -15,7 +15,7 @@ async def get_connection():
         port=os.getenv("POSTGRES_PORT"),
         user=os.getenv("POSTGRES_USER"),
         password=os.getenv("POSTGRES_PASSWORD"),
-        database=os.getenv("POSTGRES_DATABASE")
+        database=os.getenv("POSTGRES_DB")
     )
 
 
