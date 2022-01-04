@@ -13,3 +13,4 @@ logs/bot.log
 logs/parsing.log
 .DS_Store
 .env
+levels.sqlite
