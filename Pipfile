@@ -4,28 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-beautifulsoup4 = "*"
-certifi = "*"
-chardet = "*"
-cycler = "*"
-idna = "*"
-kiwisolver = "*"
-matplotlib = "*"
-numpy = "*"
-pyparsing = "*"
-python-dateutil = "*"
-requests = "*"
-six = "*"
-soupsieve = "*"
-ujson = "*"
-urllib3 = "*"
-Pillow = "*"
-pyTelegramBotAPI = "*"
-psycopg2 = "*"
+aiohttp = "*"
 pydantic = "*"
 bs4 = "*"
 asyncpg = "*"
-aiohttp = "*"
 
 [dev-packages]
 
