@@ -1,26 +1,27 @@
 import logging
+import os
 import re
 import time
 from datetime import date, timedelta
 from logging.handlers import RotatingFileHandler
-from os import environ
 
 import requests
 import telebot
-from telebot.types import (InlineKeyboardButton,
-                           InlineKeyboardMarkup,
+from telebot.types import (InlineKeyboardButton, InlineKeyboardMarkup,
                            ReplyKeyboardMarkup)
 
 from utils import Plotter, Reservoir, TimePeriod, res_param
 
 
-bot = telebot.TeleBot(environ['TOKEN'])
+TOKEN = os.environ.get('BOT_BWU')
+
+bot = telebot.TeleBot(TOKEN)
 
 logger = telebot.logger
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter(
     '%(asctime)s %(levelname)s %(funcName)s - %(message)s')
-rf_handler = RotatingFileHandler('bot.log', maxBytes=5000000, backupCount=2)
+rf_handler = RotatingFileHandler('logs/bot.log', 5000000, 2)
 rf_handler.setFormatter(formatter)
 logger.addHandler(rf_handler)
 

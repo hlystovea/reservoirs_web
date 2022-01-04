@@ -9,6 +9,8 @@ main.bat
 .vscode/settings.json
 reload_db.py
 levels_new.sqlite
+logs/bot.log
+logs/parsing.log
+.DS_Store
 .env
-oops.jpg
-bot.log
+levels.sqlite
