@@ -9,6 +9,7 @@ pydantic = "*"
 bs4 = "*"
 asyncpg = "*"
 yoyo-migrations = "*"
+psycopg2 = "*"
 
 [dev-packages]
 
