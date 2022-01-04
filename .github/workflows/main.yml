@@ -1,4 +1,4 @@
-name: Sayanbot deploy
+name: Reservoirs_bot deploy
 
 on:
   push:
