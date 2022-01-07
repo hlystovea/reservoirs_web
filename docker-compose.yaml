@@ -26,6 +26,15 @@ services:
       - db
     env_file:
       - ./.env
+  bot:
+    image: hlystovea/reservoirs_bot:latest
+    container_name: bot
+    restart: always
+    command: python3 bot.py
+    depends_on:
+      - db
+    env_file:
+      - ./.env
 
 volumes:
   postgres:
