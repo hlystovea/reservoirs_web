@@ -167,8 +167,8 @@ async def regions_handler(
     reservoirs = await bot.db.get_reservoirs_by_region(callback_data['answer'])
     markup = get_markup_with_objs(action='reservoir', objs=reservoirs)
     back_button = types.InlineKeyboardButton(
-            'Назад', callback_data=main_cb.new(action='start', answer='_')
-        )
+        'Назад', callback_data=main_cb.new(action='start', answer='_')
+    )
     markup.add(back_button)
     await query.message.edit_text(
         'Выберите водохранилище:', reply_markup=markup
@@ -193,15 +193,11 @@ async def reservoirs_handler(
     data = await state.get_data()
     markup = get_markup_with_items(action='command', items=command_buttons)
     back_button = types.InlineKeyboardButton(
-            'Назад',
-            callback_data=main_cb.new(
-                action='region', answer=data['region']
-            ),
-        )
-    markup.add(back_button)
-    await query.message.edit_text(
-        'Выберите команду:', reply_markup=markup
+        'Назад',
+        callback_data=main_cb.new(action='region', answer=data['region']),
     )
+    markup.add(back_button)
+    await query.message.edit_text('Выберите команду:', reply_markup=markup)
     await MainState.waiting_for_command.set()
 
 
@@ -222,15 +218,13 @@ async def commands_handler(
     data = await state.get_data()
     markup = get_markup_with_items(action='period', items=time_buttons)
     back_button = types.InlineKeyboardButton(
-            'Назад',
-            callback_data=main_cb.new(
-                action='reservoir', answer=data['reservoir']
-            ),
-        )
-    markup.add(back_button)
-    await query.message.edit_text(
-        'Выберите период:', reply_markup=markup
+        'Назад',
+        callback_data=main_cb.new(
+            action='reservoir', answer=data['reservoir']
+        ),
     )
+    markup.add(back_button)
+    await query.message.edit_text('Выберите период:', reply_markup=markup)
     await MainState.waiting_for_period.set()
 
 

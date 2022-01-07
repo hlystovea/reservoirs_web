@@ -33,7 +33,9 @@ async def plotter(
     ax.set_ylabel(ylabel.get(command), fontsize=9)
 
     ax.grid(True, 'major', 'both')
-    ax.xaxis.set_major_locator(MultipleLocator(len(x)//6 if len(x) > 6 else 1))
+    ax.xaxis.set_major_locator(
+        MultipleLocator(len(x) // 6 if len(x) > 6 else 1)
+    )
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m.%Y'))
 
     ax.tick_params('x', labelrotation=20, labelsize=8)
