@@ -10,6 +10,8 @@ bs4 = "*"
 asyncpg = "*"
 yoyo-migrations = "*"
 psycopg2 = "*"
+aiogram = "*"
+matplotlib = "*"
 
 [dev-packages]
 

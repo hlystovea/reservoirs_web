@@ -11,6 +11,7 @@ class Reservoir(BaseModel):
     force_level: float
     normal_level: float
     dead_level: float
+    region_id: int
 
 
 class WaterSituation(BaseModel):
@@ -29,3 +30,9 @@ class WaterSituation(BaseModel):
             if isinstance(value, str) and 'нет' in value:
                 values[key] = None
         return values
+
+
+class Region(BaseModel):
+    id: Optional[int]
+    name: str
+    slug: str
