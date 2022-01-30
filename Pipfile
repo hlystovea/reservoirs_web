@@ -12,6 +12,7 @@ yoyo-migrations = "*"
 psycopg2 = "*"
 aiogram = "*"
 matplotlib = "*"
+python-dateutil = "*"
 
 [dev-packages]
 
