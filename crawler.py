@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 from bs4.element import ResultSet
 from pydantic import ValidationError
 
-from core.db.postgres import PostgresDB
-from core.db.schemas import Reservoir, WaterSituation
+from db.postgres import PostgresDB
+from db.schemas import Reservoir, WaterSituation
 
 DATABASE_URL = environ.get('DATABASE_URL')
 DATE_FORMAT = environ.get('DATE_FORMAT', '%d.%m.%Y')

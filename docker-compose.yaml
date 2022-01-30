@@ -30,7 +30,7 @@ services:
     image: hlystovea/reservoirs_bot:latest
     container_name: bot
     restart: always
-    command: python3 bot.py
+    command: python3 main.py
     depends_on:
       - db
     env_file:

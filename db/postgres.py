@@ -1,10 +1,11 @@
 import datetime as dt
+from os import environ
 from typing import List, Optional
 
 import asyncpg
 from pydantic import parse_obj_as
 
-from core.db.schemas import Region, Reservoir, WaterSituation
+from db.schemas import Region, Reservoir, WaterSituation
 
 
 class PostgresDB:
@@ -118,3 +119,6 @@ class PostgresDB:
                 date2,
             )
             return parse_obj_as(List[WaterSituation], result)
+
+
+db = PostgresDB(environ['DATABASE_URL'])
