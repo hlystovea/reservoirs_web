@@ -1,10 +1,14 @@
+import datetime as dt
 import io
-from typing import List
+from typing import List, Tuple
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
+from bot.exceptions import NoDataError
+from db.postgres import db
+from db.schemas import Reservoir
 
 ylabel = {
     'level': 'Высота над уровнем моря, м',
@@ -61,3 +65,31 @@ def save_csv(reservoir, timeperiod):
     f = open('level.csv', 'w')
     f.write(record)
     f.close()
+
+
+async def plot_graph(
+    reservoir: Reservoir, command: str, period: Tuple[dt.date]
+):
+    """
+    This function return a photo with a graph
+    """
+    water_situations = await db.get_water_situations_by_date(
+        reservoir, min(period), max(period)
+    )
+    if len(water_situations) == 0:
+        raise NoDataError('Нет данных за указанный период.')
+
+    date1, date2 = water_situations[0].date, water_situations[-1].date
+    x = [ws.date for ws in water_situations]
+    y = [getattr(ws, command) for ws in water_situations]
+    title = (
+        f'{reservoir.name} водохранилище\n'
+        f'ФПУ={reservoir.force_level} м, '
+        f'НПУ={reservoir.normal_level} м, '
+        f'УМО={reservoir.dead_level} м'
+    )
+    caption = (
+        f'График за период с {date1.strftime("%d.%m.%Y")} '
+        f'по {date2.strftime("%d.%m.%Y")}'
+    )
+    return await plotter(x, y, title, command), caption
