@@ -3,13 +3,14 @@ import datetime as dt
 import logging
 from logging.handlers import RotatingFileHandler
 from os import environ
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils.callback_data import CallbackData
+from dateutil.parser import parse, ParserError
 
 from core.db.schemas import Region, Reservoir
 from core.db.postgres import PostgresDB
@@ -17,6 +18,10 @@ from core.utils.plotter import plotter
 
 BOT_TOKEN = environ.get('BOT_BWU')
 DATABASE_URL = environ.get('DATABASE_URL')
+
+
+class NoDataError(Exception):
+    pass
 
 
 console_out_hundler = logging.StreamHandler()
@@ -52,6 +57,7 @@ time_buttons = {
     183: 'Пол года',
     365: 'Год',
     10000: 'За всё время',
+    'manually': 'Ввести даты вручную',
 }
 
 command_buttons = {
@@ -244,39 +250,85 @@ async def period_handler(
     period = callback_data['answer']
     if not period.isdigit():
         await MainState.waiting_for_date1.set()
-        return query.message.edit_text(
-            'Введите первую дату периода в формате dd.mm.yyyy:'
+        return await query.message.edit_text(
+            'Введите первую дату периода в формате yyyy.mm.dd:'
         )
     try:
         data = await state.get_data()
         reservoir = await bot.db.get_reservoir_by_slug(data['reservoir'])
-        command = data['command']
-    except (KeyError, TypeError) as error:
-        logging.error(repr(error))
-        await query.message.edit_text('Упс.. что-то пошло не так.')
-        await state.finish()
-    else:
         date2 = dt.date.today()
         date1 = date2 - dt.timedelta(int(period))
-        await send_graph(query.message, reservoir, command, date1, date2)
+        pic, caption = await plot_graph(
+            reservoir, data['command'], (date1, date2)
+        )
+    except (KeyError, TypeError, NoDataError) as error:
+        logging.error(repr(error))
+        await query.message.edit_text('Упс.. что-то пошло не так.')
+    else:
+        await query.message.answer_photo(
+            pic, caption, disable_notification=True
+        )
+        await query.message.delete()
+    finally:
+        await state.finish()
+
+
+@dp.message_handler(state=MainState.waiting_for_date1)
+async def manually_input_date1_handler(
+    message: types.Message, state: FSMContext
+):
+    """
+    This handler will be called when the user sets
+    the waiting_for_date1 state
+    """
+    try:
+        date = parse(message.text)
+    except ParserError as error:
+        logging.error(repr(error))
+        return await message.reply('Попробуйте ещё раз в формате yyyy.mm.dd:')
+    await state.update_data(date1=date.date())
+    await MainState.waiting_for_date2.set()
+    return await message.answer(
+        'Введите вторую дату периода в формате yyyy.mm.dd:'
+    )
+
+
+@dp.message_handler(state=MainState.waiting_for_date2)
+async def manually_input_date2_handler(
+    message: types.Message, state: FSMContext
+):
+    """
+    This handler will be called when the user sets
+    the waiting_for_date2 state
+    """
+    try:
+        date = parse(message.text)
+        data = await state.get_data()
+        reservoir = await bot.db.get_reservoir_by_slug(data['reservoir'])
+        pic, caption = await plot_graph(
+            reservoir, data['command'], (data['date1'], date.date())
+        )
+        await message.answer_photo(pic, caption, disable_notification=True)
+    except ParserError as error:
+        logging.error(repr(error))
+        await message.reply('Попробуйте ещё раз в формате yyyy.mm.dd:')
+    except NoDataError as error:
+        logging.error(repr(error))
+        await message.answer('Нет данных за указанный период времени.')
     await state.finish()
 
 
-async def send_graph(
-    message: types.Message,
-    reservoir: Reservoir,
-    command: str,
-    date1: dt.date,
-    date2: dt.date,
+async def plot_graph(
+    reservoir: Reservoir, command: str, period: Tuple[dt.date]
 ):
     """
-    This function sends a photo with a graph
+    This function return a photo with a graph
     """
     water_situations = await bot.db.get_water_situations_by_date(
-        reservoir, date1, date2
+        reservoir, min(period), max(period)
     )
     if len(water_situations) == 0:
-        return await message.edit_text('Нет данных за указанный период')
+        raise NoDataError('Нет данных за указанный период.')
 
     date1, date2 = water_situations[0].date, water_situations[-1].date
     x = [ws.date for ws in water_situations]
@@ -291,14 +343,7 @@ async def send_graph(
         f'График за период с {date1.strftime("%d.%m.%Y")} '
         f'по {date2.strftime("%d.%m.%Y")}'
     )
-    try:
-        pic = await plotter(x, y, title, command)
-    except Exception as error:
-        logging.error(repr(error))
-        await message.edit_text('Упс.. Что-то пошло не так.')
-    else:
-        await message.answer_photo(pic, caption, disable_notification=True)
-        await message.delete()
+    return await plotter(x, y, title, command), caption
 
 
 if __name__ == '__main__':
