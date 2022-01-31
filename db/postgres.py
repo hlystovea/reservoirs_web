@@ -1,10 +1,12 @@
 import datetime as dt
+import logging
+from os import environ
 from typing import List, Optional
 
 import asyncpg
 from pydantic import parse_obj_as
 
-from core.db.schemas import Region, Reservoir, WaterSituation
+from db.schemas import Region, Reservoir, WaterSituation
 
 
 class PostgresDB:
@@ -14,10 +16,12 @@ class PostgresDB:
 
     async def setup(self):
         self.pool = await asyncpg.create_pool(self.dsn, min_size=1, max_size=5)
+        logging.info('Start DB')
 
     async def stop(self):
         if self.pool:
             await self.pool.close()
+            logging.info('Stop DB')
 
     async def insert_one(self, obj: WaterSituation) -> asyncpg.Record:
         async with self.pool.acquire() as conn:
@@ -118,3 +122,6 @@ class PostgresDB:
                 date2,
             )
             return parse_obj_as(List[WaterSituation], result)
+
+
+db = PostgresDB(environ['DATABASE_URL'])
