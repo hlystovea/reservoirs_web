@@ -25,19 +25,18 @@ logging.basicConfig(
 )
 
 
-commands = [
-    BotCommand(command='/start', description='начать'),
-    BotCommand(command='/help', description='помощь'),
-    BotCommand(command='/menu', description='открыть меню')
-]
-
-
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot, storage=MemoryStorage())
-
-
 async def main():
+    bot = Bot(token=BOT_TOKEN)
+    dp = Dispatcher(bot, storage=MemoryStorage())
+
+    commands = [
+        BotCommand(command='/start', description='начать'),
+        BotCommand(command='/help', description='помощь'),
+        BotCommand(command='/menu', description='открыть меню')
+    ]
     await bot.set_my_commands(commands)
+
+    await db.setup()
 
     register_common_handlers(dp)
     register_water_situation_handlers(dp)
@@ -46,12 +45,4 @@ async def main():
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(db.setup())
-        loop.run_until_complete(main())
-    except (KeyboardInterrupt, SystemExit):
-        pass
-    finally:
-        db.stop()
-        loop.close()
+    asyncio.run(main())
