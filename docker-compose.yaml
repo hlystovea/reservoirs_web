@@ -2,7 +2,7 @@ version: '3.3'
 
 services:
   db:
-    image: postgres:14-alpine
+    image: postgres:14
     container_name: postgres_db
     restart: always
     volumes:
@@ -35,6 +35,22 @@ services:
       - db
     env_file:
       - ./.env
+  web:
+    image: hlystovea/reservoirs_web:latest
+    container_name: web
+    restart: always
+    command: gunicorn web.wsgi --bind 0.0.0.0:8000
+    volumes:
+      - static_value:/resource_planner/static/
+      - media_value:/resource_planner/media/
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    env_file:
+      - ./.env
 
 volumes:
   postgres:
+  static_value:
+  media_value:
