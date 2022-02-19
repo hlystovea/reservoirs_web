@@ -15,6 +15,7 @@ class Reservoir(BaseModel):
     useful_volume: Optional[float]
     full_volume: Optional[float]
     area: Optional[float]
+    max_depth: Optional[float]
 
 
 class WaterSituation(BaseModel):
