@@ -36,7 +36,7 @@ services:
     env_file:
       - ./.env
   web:
-    image: hlystovea/reservoirs_web:latest
+    build: ./web
     container_name: web
     restart: always
     command: gunicorn web.wsgi --bind 0.0.0.0:8000
