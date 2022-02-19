@@ -41,7 +41,7 @@ jobs:
           username: ${{ secrets.USER  }}
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-          source: "docker-compose.yaml"
+          source: "*,!.git,!.github,!.venv,!.env"
           target: "~/reservoirs_bot"
           overwrite: true
 
