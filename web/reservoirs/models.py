@@ -37,7 +37,6 @@ class Reservoir(models.Model):
         blank=True,
         null=True,
     )
-    '''
     useful_volume = models.FloatField(
         verbose_name='Полезный объем',
         help_text='Полезный объем водохранилища в км\u00b3',
@@ -59,7 +58,12 @@ class Reservoir(models.Model):
         blank=True,
         null=True,
     )
-    '''
+    max_depth = models.FloatField(
+        verbose_name='Максимальная глубина',
+        max_length=64,
+        blank=True,
+        null=True,
+    )
 
     class Meta:
         db_table = 'reservoirs'
@@ -102,7 +106,6 @@ class WaterSituation(models.Model):
         to_field='id',
         verbose_name='Водохранилище',
         on_delete=models.CASCADE,
-        # null=True,
     )
 
     class Meta:

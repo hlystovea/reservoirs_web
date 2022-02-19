@@ -41,8 +41,8 @@ services:
     restart: always
     command: gunicorn web.wsgi --bind 0.0.0.0:8000
     volumes:
-      - static_value:/resource_planner/static/
-      - media_value:/resource_planner/media/
+      - static_value:/reservoirs_web/static/
+      - media_value:/reservoirs_web/media/
     depends_on:
       - db
     env_file:
