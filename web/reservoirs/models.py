@@ -30,15 +30,38 @@ class Reservoir(models.Model):
         null=True,
     )
     region = models.ForeignKey(
-        verbose_name='Регион',
         to='common.Region',
+        to_field='id',
+        verbose_name='Регион',
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
     )
+    '''
+    useful_volume = models.FloatField(
+        verbose_name='Полезный объем',
+        help_text='Полезный объем водохранилища в км\u00b3',
+        max_length=64,
+        blank=True,
+        null=True,
+    )
+    full_volume = models.FloatField(
+        verbose_name='Полный объем',
+        help_text='Полный объем водохранилища в км\u00b3',
+        max_length=64,
+        blank=True,
+        null=True,
+    )
+    area = models.FloatField(
+        verbose_name='Площадь',
+        help_text='Площадь водохранилища в км\u00b2',
+        max_length=64,
+        blank=True,
+        null=True,
+    )
+    '''
 
     class Meta:
-        managed = False
         db_table = 'reservoirs'
         verbose_name = 'Водохранилище'
         verbose_name_plural = 'Водохранилища'
@@ -75,18 +98,19 @@ class WaterSituation(models.Model):
         null=True,
     )
     reservoir = models.ForeignKey(
-        to=Reservoir,
+        to='reservoirs.Reservoir',
+        to_field='id',
         verbose_name='Водохранилище',
         on_delete=models.CASCADE,
+        # null=True,
     )
 
     class Meta:
-        managed = False
         db_table = 'water_situation'
         verbose_name = 'Гидрологическая обстановка'
         verbose_name_plural = 'Гидрологическая обстановка'
         unique_together = (
-            ('date', 'reservoir'),
+            ('date', 'reservoir_id'),
         )
 
     def __str__(self):

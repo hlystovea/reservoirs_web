@@ -12,6 +12,9 @@ class Reservoir(BaseModel):
     normal_level: float
     dead_level: float
     region_id: int
+    useful_volume: Optional[float]
+    full_volume: Optional[float]
+    area: Optional[float]
 
 
 class WaterSituation(BaseModel):

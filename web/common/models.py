@@ -13,7 +13,6 @@ class Region(models.Model):
     )
 
     class Meta:
-        managed = False
         db_table = 'regions'
         verbose_name = 'Регион'
         verbose_name_plural = 'Регионы'
