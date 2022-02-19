@@ -47,7 +47,7 @@ async def plotter(
 
     pic = io.BytesIO()
     plt.savefig(pic, format='png')
-    plt.close
+    plt.close()
     pic.seek(0)
     return pic
 
