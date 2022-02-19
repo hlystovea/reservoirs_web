@@ -1,11 +1,14 @@
+import logging
 from typing import Dict
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
+from bot.exceptions import NoDataError
 from bot.markups import (command_buttons, get_markup_with_items,
                          get_markup_with_objs, main_cb, time_buttons)
+from bot.utils import reservoir_info
 from db.postgres import db
 
 
@@ -24,7 +27,13 @@ def register_common_handlers(dp: Dispatcher):
     dp.register_message_handler(menu, commands=['menu'], state='*')
     dp.register_callback_query_handler(back, main_cb.filter(action='start'), state='*')  # noqa (E501)
     dp.register_callback_query_handler(
-        commands,
+        info_command_handler,
+        main_cb.filter(action='command'),
+        main_cb.filter(answer='info'),
+        state=MainState.waiting_for_command,
+    )
+    dp.register_callback_query_handler(
+        plot_command_handler,
         main_cb.filter(action='command'),
         state=MainState.waiting_for_command,
     )
@@ -63,7 +72,7 @@ async def start(message: types.Message, state: FSMContext):
 
 async def menu(message: types.Message, state: FSMContext):
     """
-    This handler will be called when user sends text "Начать"
+    This handler will be called when user sends text "Показать меню"
     """
     await state.finish()
     regions = await db.get_all_regions()
@@ -93,6 +102,7 @@ async def back(
     await query.message.edit_text(
         text='Выберите регион:', reply_markup=markup
     )
+    await query.answer()
     await MainState.waiting_for_region.set()
 
 
@@ -115,6 +125,7 @@ async def regions_handler(
     await query.message.edit_text(
         'Выберите водохранилище:', reply_markup=markup
     )
+    await query.answer()
     await MainState.waiting_for_reservoir.set()
 
 
@@ -136,10 +147,11 @@ async def reservoirs_handler(
     )
     markup.add(back_button)
     await query.message.edit_text('Выберите команду:', reply_markup=markup)
+    await query.answer()
     await MainState.waiting_for_command.set()
 
 
-async def commands(
+async def plot_command_handler(
     query: types.CallbackQuery,
     callback_data: Dict[str, str],
     state: FSMContext,
@@ -150,6 +162,7 @@ async def commands(
     """
     await state.update_data(command=callback_data['answer'])
     data = await state.get_data()
+
     markup = get_markup_with_items(action='period', items=time_buttons)
     back_button = types.InlineKeyboardButton(
         'Назад',
@@ -158,5 +171,31 @@ async def commands(
         ),
     )
     markup.add(back_button)
+
     await query.message.edit_text('Выберите период:', reply_markup=markup)
+    await query.answer()
     await MainState.waiting_for_period.set()
+
+
+async def info_command_handler(
+    query: types.CallbackQuery,
+    callback_data: Dict[str, str],
+    state: FSMContext,
+):
+    """
+    This handler will be called when the user sends
+    query with "command" action and "info" answer
+    """
+    data = await state.get_data()
+
+    try:
+        reservoir = await db.get_reservoir_by_slug(data['reservoir'])
+        await query.message.edit_text(
+            reservoir_info(reservoir), parse_mode='Markdown'
+        )
+    except (KeyError, TypeError, NoDataError) as error:
+        logging.error(repr(error))
+        await query.message.edit_text('Упс.. что-то пошло не так.')
+
+    await query.answer()
+    await state.finish()

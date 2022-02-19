@@ -20,6 +20,7 @@ command_buttons = {
     'inflow': 'Построить график притока',
     'outflow': 'Построить график сброса',
     'spillway': 'Построить график холостых сбросов',
+    'info': 'Характеристики водохранилища',
 }
 
 main_cb = CallbackData('main', 'action', 'answer')
