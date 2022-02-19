@@ -13,6 +13,8 @@ psycopg2 = "*"
 aiogram = "*"
 matplotlib = "*"
 python-dateutil = "*"
+django = "*"
+django-environ = "*"
 
 [dev-packages]
 
