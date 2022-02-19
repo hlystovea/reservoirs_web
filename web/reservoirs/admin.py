@@ -12,7 +12,7 @@ class MixinAdmin(admin.ModelAdmin):
         TextField: {'widget': Textarea(attrs={'rows': 8, 'cols': 80})},
     }
 
-'''
+
 class WaterSituationYearFilter(admin.SimpleListFilter):
     title = 'год'
     parameter_name = 'year'
@@ -30,7 +30,7 @@ class WaterSituationYearFilter(admin.SimpleListFilter):
 @admin.register(Reservoir)
 class ReservoirAdmin(MixinAdmin):
     list_display = ('id', 'name', 'force_level', 'normal_level', 'dead_level',
-                    'useful_volume', 'full_volume', 'area', 'region')
+                    'useful_volume', 'full_volume', 'area', 'max_depth')
     search_fields = ('name', 'slug')
     list_filter = ('region__name', )
     prepopulated_fields = {'slug': ('name',)}
@@ -40,6 +40,4 @@ class ReservoirAdmin(MixinAdmin):
 class WaterSituationAdmin(MixinAdmin):
     list_display = ('id', 'reservoir_id', 'date', 'level', 'free_capacity',
                     'inflow', 'outflow', 'spillway')
-    search_fields = ('reservoir_id', )
-    list_filter = ('reservoir_id__name', WaterSituationYearFilter)
-'''
+    list_filter = ('reservoir__name', WaterSituationYearFilter)
