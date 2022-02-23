@@ -78,6 +78,8 @@ class Crawler:
                 'div',
                 class_=f'informer-block {reservoir.slug}',
             )
+            if informer_data is None:
+                continue
             num_values = informer_data.find_all('b')
             normalized_values = await self.values_normalizer(num_values[3:])
             normalized_values['date'] = date
