@@ -105,7 +105,7 @@ class Crawler:
                     try:
                         water_situations = await self.parser(page, reservoirs)
                         await self.save_to_db(water_situations)
-                    except ValueError as error:
+                    except (ValueError, AttributeError) as error:
                         logging.error(repr(error))
                     await asyncio.sleep(self.delay)
             logging.info('Sleep crawler')
