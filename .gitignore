@@ -13,3 +13,4 @@ levels_new.sqlite
 .DS_Store
 .env
 levels.sqlite
+*static/

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Войти{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-8 p-5">
+    <div class="card">
+      <div class="card-header">Войти на сайт</div>
+      <div class="card-body">
+
+        {% if next %}            
+            <div class="alert alert-info" role="alert">
+              Вы обратились к странице, доступ к которой возможен только для залогиненных пользователей.<br>
+              Пожалуйста, авторизуйтесь.
+            </div>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+              Пожалуйста, авторизуйтесь.
+            </div>
+        {% endif %}
+
+        {% include 'includes/form.html' %}
+
+          <div class="col-md-6 offset-md-4">              
+              <button type="submit" class="btn btn-primary">
+                Войти
+              </button>
+              <a href="{% url 'password_reset' %}" class="btn btn-link">
+                Забыли пароль?
+              </a>
+          </div>
+        </form>
+      </div> <!-- card body -->
+    </div> <!-- card -->
+  </div> <!-- col -->
+</div> <!-- row -->
+
+{% endblock %}
