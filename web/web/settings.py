@@ -14,6 +14,8 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = ['https://reservoirs.hlystovea.ru']
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
