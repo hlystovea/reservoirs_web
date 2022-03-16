@@ -38,6 +38,10 @@ class ReservoirAdmin(MixinAdmin):
 
 @admin.register(WaterSituation)
 class WaterSituationAdmin(MixinAdmin):
-    list_display = ('id', 'reservoir_id', 'date', 'level', 'free_capacity',
+    list_display = ('id', 'reservoir_name', 'date', 'level', 'free_capacity',
                     'inflow', 'outflow', 'spillway')
     list_filter = ('reservoir__name', WaterSituationYearFilter)
+
+    @admin.display(description='Наименование вдхр.')
+    def reservoir_name(self, obj):
+        return obj.reservoir.name

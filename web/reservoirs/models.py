@@ -117,4 +117,4 @@ class WaterSituation(models.Model):
         )
 
     def __str__(self):
-        return self.name
+        return f'{self.reservoir.name}: {self.date}'
