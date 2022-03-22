@@ -14,4 +14,161 @@
       </p>
     </div>
   </div>
+{% block jquery %}
+  <script>
+    $.ajax({
+      method: "GET",
+      url: "{% url 'reservoirs:v1:reservoir-list' %}",
+      success: function(data){
+        $("#selectReservoirs option").remove();
+        for (var i in data)
+          $("#selectReservoirs").append("<option val=" + data[i].slug + ">" + data[i].name + "</option>");
+      },          
+      error: function(error_data){
+        console.log(error_data)
+      }
+    })
+  </script>
+  <select name ="selectReservoirs" id="selectReservoirs"></select>
+  <div class="container">
+    <div class="row justify-content-md-center">
+      <div class="col-md-8">
+        <canvas id="levelsChart" width="400" height="200"></canvas>
+      </div>
+      <div class="col-md-8">
+        <canvas id="flowsChart" width="400" height="200"></canvas>
+      </div>
+      <script>
+        var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=sayano&start=2022-01-01"
+        setData(url)
+
+        $("select#selectReservoirs").change(function(){
+          var optionSelected = $(this).find("option:selected")
+          var slug  = optionSelected.attr('val')
+          var start = "2022-01-01"
+          var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=" + slug + "&start=" + start
+          setData(url)
+        });
+
+        function setData(url){
+          $.ajax({
+            method: "GET",
+            url: url,
+            success: function(data){
+              let dates = []
+              let levels = []
+              let inflows = []
+              let outflows = []
+              let spillway = []
+              for(var i in data)
+                dates.push(data[i].date);
+              for(var i in data)
+                levels.push(data[i].level);
+              for(var i in data)
+                inflows.push(data[i].inflow);
+              for(var i in data)
+                outflows.push(data[i].outflow);
+              for(var i in data)
+                spillway.push(data[i].spillway);
+
+              levelsChart.data.labels = dates;
+              levelsChart.data.datasets[0].data = levels;
+              levelsChart.update();
+
+              flowsChart.data.labels = dates;
+              flowsChart.data.datasets[0].data = inflows;
+              flowsChart.data.datasets[1].data = outflows;
+              flowsChart.data.datasets[2].data = spillway;
+              flowsChart.update();
+            },
+            error: function(error_data){
+              console.log("error")
+              console.log(error_data)
+            }
+          })
+        };
+
+        const flows_ctx = document.getElementById("flowsChart").getContext("2d");
+        const levels_ctx = document.getElementById("levelsChart").getContext("2d");
+
+        options = {
+          scales: {
+            y: {
+                beginAtZero: false
+            }
+          },
+          elements: {
+            point: {
+              radius: 2
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: "bottom",
+              labels: {
+                  boxHeight: 0
+              }
+            }
+          }
+        };
+
+        var levels_data = {
+          labels: [],
+          datasets: [{
+            label: "УВБ, м",
+            data: [],
+            backgroundColor: "rgba(255, 159, 64, 0.2)",
+            borderColor: "rgba(255, 159, 64, 1)",
+            borderWidth: 1,
+            fill: true,
+          }]
+        };
+
+        var levels_config = {
+          type: "line",
+          data: levels_data,
+          options: options
+        };
+
+        var flows_data = {
+          labels: [],
+          datasets: [{
+            label: "Приток, м\u00B3/с",
+            data: [],
+            backgroundColor: "rgba(255, 99, 132, 0.2)",
+            borderColor: "rgba(255, 99, 132, 1)",
+            borderWidth: 1,
+            fill: true,
+          },
+          {
+            label: "Сброс, м\u00B3/с",
+            data: [],
+            backgroundColor: "rgba(54, 162, 235, 0.2)",
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1,
+            fill: true,
+          },
+          {
+            label: "Холостой сброс, м\u00B3/с",
+            data: [],
+            backgroundColor: "rgba(153, 102, 255, 0.2)",
+            borderColor: "rgba(153, 102, 255, 1)",
+            borderWidth: 1,
+            fill: true,
+          }]
+        };
+
+        var flows_config = {
+          type: "line",
+          data: flows_data,
+          options: options
+        };
+
+        const levelsChart = new Chart(levels_ctx, levels_config);
+        const flowsChart = new Chart(flows_ctx, flows_config);
+      </script>
+    </div>
+  </div
+{% endblock %}
 {% endblock %}

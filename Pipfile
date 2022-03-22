@@ -15,6 +15,8 @@ matplotlib = "*"
 python-dateutil = "*"
 django = "*"
 django-environ = "*"
+djangorestframework = "*"
+django-filter = "*"
 
 [dev-packages]
 
