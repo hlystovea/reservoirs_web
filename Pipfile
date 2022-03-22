@@ -17,6 +17,7 @@ django = "*"
 django-environ = "*"
 djangorestframework = "*"
 django-filter = "*"
+gunicorn = "*"
 
 [dev-packages]
 
