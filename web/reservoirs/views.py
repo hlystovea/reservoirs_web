@@ -8,12 +8,12 @@ from reservoirs.serializers import (ReservoirSerializer,
 
 
 class ReservoirsViewSet(ReadOnlyModelViewSet):
-    queryset = Reservoir.objects.all()
+    queryset = Reservoir.objects.order_by('id')
     serializer_class = ReservoirSerializer
 
 
 class WaterSituationsViewSet(ReadOnlyModelViewSet):
-    queryset = WaterSituation.objects.all()
+    queryset = WaterSituation.objects.order_by('date')
     serializer_class = WaterSituationSerializer
     filter_backends = (DjangoFilterBackend, )
     filter_class = SituationFilter
