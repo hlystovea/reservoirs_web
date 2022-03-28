@@ -14,31 +14,87 @@
     error: function(error_data){
       console.log(error_data)
     }
-  })
+  });
+
+  $(function(){
+    var dateFormat = "yy-mm-dd",
+    options = {
+      yearRange: "2013:2022",
+      changeMonth: true,
+      changeYear: true,
+      numberOfMonths: 1,
+      dateFormat: "yy-mm-dd"
+    },
+    dateFrom = $("#dateFrom").datepicker(options).on("change", function(){
+      dateTo.datepicker("option", "minDate", getDate(this));
+    }),
+    dateTo = $("#dateTo").datepicker(options).on("change", function(){
+      dateFrom.datepicker("option", "maxDate", getDate(this));
+    });
+
+    function getDate(element){
+      var date;
+      try {
+        date = $.datepicker.parseDate(dateFormat, element.value);
+      } catch( error ) {
+        date = null;
+      }
+      return date;
+    }
+  });
 </script>
-<div class="row justify-content-md-center mb-3">
-  <div class="col-md-auto">
-    Выберите водохранилище <select name ="selectReservoirs" id="selectReservoirs"></select>
+
+<div class="row justify-content-xl-center mt-4">
+  <div class="col col-sm-3">
+    <h5 class="mb-3">Выбрать данные</h5>
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <label for="dateFrom" class="form-label">с</label>
+        <input type="text" id="dateFrom" class="form-control" name="dateFrom" value="2022-01-01">
+      </div>
+      <div class="col-sm-6">
+        <label for="dateTo" class="form-label">по</label>
+        <input type="text" id="dateTo" class="form-control" name="dateTo" value="{% now 'Y-m-d' %}">
+      </div>
+      <div class="col-sm-12">
+        <label for="selectReservoirs" class="form-label">водохранилище</label>
+        <select id="selectReservoirs" class="form-select" name ="selectReservoirs"></select>
+      </div>
+      <div class="col-sm-12">
+        <button id="updateButton" type="button" class="btn btn-dark mt-2">Показать</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="row">
+      <canvas id="levelsChart"></canvas>
+    </div>
+    <div class="row">
+      <canvas id="flowsChart"></canvas>
+    </div>
+  </div>
+  <div class="col col-sm">
   </div>
 </div>
-<div class="row justify-content-md-center">
-  <div class="col-md-8">
-    <canvas id="levelsChart" width="400" height="200"></canvas>
-  </div>
-  <div class="col-md-8">
-    <canvas id="flowsChart" width="400" height="200"></canvas>
-  </div>
+
   <script>
-    var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=sayano&start=2022-01-01"
-    setData(url)
-    $("select#selectReservoirs").change(function(){
-      var optionSelected = $(this).find("option:selected")
-      var slug  = optionSelected.attr('val')
-      var start = "2022-01-01"
-      var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=" + slug + "&start=" + start
-      setData(url)
+    function getUrl(){
+      var slug  = $("#selectReservoirs").find("option:selected").attr('val')
+      if (slug == null) {
+        slug = "sayano"
+      }
+      var start = $("#dateFrom").val()
+      var end = $("#dateTo").val()
+      var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=" + slug + "&start=" + start + "&end=" + end
+      return url;
+    }
+    setCharts(getUrl())
+    $(document).ready(function() {
+      $("#updateButton").click(function(){
+        setCharts(getUrl())
+      });
     });
-    function setData(url){
+    function setCharts(url){
       $.ajax({
         method: "GET",
         url: url,
@@ -48,6 +104,7 @@
           let inflows = []
           let outflows = []
           let spillway = []
+
           for(var i in data)
             dates.push(data[i].date);
           for(var i in data)
@@ -58,9 +115,11 @@
             outflows.push(data[i].outflow);
           for(var i in data)
             spillway.push(data[i].spillway);
+
           levelsChart.data.labels = dates;
           levelsChart.data.datasets[0].data = levels;
           levelsChart.update();
+
           flowsChart.data.labels = dates;
           flowsChart.data.datasets[0].data = inflows;
           flowsChart.data.datasets[1].data = outflows;
@@ -83,7 +142,7 @@
       },
       elements: {
         point: {
-          radius: 2
+          radius: 0
         }
       },
       plugins: {
@@ -147,6 +206,5 @@
     const levelsChart = new Chart(levels_ctx, levels_config);
     const flowsChart = new Chart(flows_ctx, flows_config);
   </script>
-</div>
 {% endblock %}
 {% endblock %}
