@@ -63,7 +63,7 @@ jobs:
             sudo docker-compose stop
             sudo docker-compose rm crawler
             sudo docker-compose rm bot
-            sudo docker-compose rm web
+            sudo docker-compose rm web -f
             echo BOT_BWU=${{ secrets.BOT_BWU }} > .env
             echo POSTGRES_HOST=${{ secrets.POSTGRES_HOST }} >> .env
             echo POSTGRES_PORT=${{ secrets.POSTGRES_PORT }} >> .env
