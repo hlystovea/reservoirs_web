@@ -1,139 +1,171 @@
 {% extends "base.html" %}
 {% block title %}Главная страница{% endblock %}
 {% block content %}
-{% block jquery %}
-<script>
-  $.ajax({
-    method: "GET",
-    url: "{% url 'reservoirs:v1:reservoir-list' %}",
-    success: function(data){
-      $("#selectReservoirs option").remove();
-      for (var i in data)
-        $("#selectReservoirs").append("<option val=" + data[i].slug + ">" + data[i].name + "</option>");
-    },          
-    error: function(error_data){
-      console.log(error_data)
-    }
-  });
-
-  $(function(){
-    var dateFormat = "yy-mm-dd",
-    options = {
-      yearRange: "2013:2022",
-      changeMonth: true,
-      changeYear: true,
-      numberOfMonths: 1,
-      dateFormat: "yy-mm-dd"
-    },
-    dateFrom = $("#dateFrom").datepicker(options).on("change", function(){
-      dateTo.datepicker("option", "minDate", getDate(this));
-    }),
-    dateTo = $("#dateTo").datepicker(options).on("change", function(){
-      dateFrom.datepicker("option", "maxDate", getDate(this));
-    });
-
-    function getDate(element){
-      var date;
-      try {
-        date = $.datepicker.parseDate(dateFormat, element.value);
-      } catch( error ) {
-        date = null;
-      }
-      return date;
-    }
-  });
-</script>
-
-<div class="row justify-content-xl-center mt-4">
-  <div class="col col-sm-3">
-    <h5 class="mb-3">Выбрать данные</h5>
-    <div class="row g-3">
-      <div class="col-sm-6">
-        <label for="dateFrom" class="form-label">с</label>
-        <input type="text" id="dateFrom" class="form-control" name="dateFrom" value="2022-01-01">
-      </div>
-      <div class="col-sm-6">
-        <label for="dateTo" class="form-label">по</label>
-        <input type="text" id="dateTo" class="form-control" name="dateTo" value="{% now 'Y-m-d' %}">
-      </div>
-      <div class="col-sm-12">
-        <label for="selectReservoirs" class="form-label">водохранилище</label>
-        <select id="selectReservoirs" class="form-select" name ="selectReservoirs"></select>
-      </div>
-      <div class="col-sm-12">
-        <button id="updateButton" type="button" class="btn btn-dark mt-2">Показать</button>
+<div class="row justify-content-xl-center mt-1">
+  <div class="col-md-3 mt-3">
+    <h6 class="col-md-auto mb-0 mt-3">Выбрать данные:</h6>
+    <div class="col-md-auto">
+      <label for="dateFrom" class="form-label mb-1 mt-2">с</label>
+      <input type="date" id="dateFrom" class="form-control" name="dateFrom" value="2022-01-01" min="2013-01-01" max="{% now 'Y-m-d' %}">
+    </div>
+    <div class="col-sm-auto">
+      <label for="dateFrom" class="form-label mb-1 mt-2">по</label>
+      <input type="date" id="dateTo" class="form-control" name="dateTo" value="{% now 'Y-m-d' %}" min="2013-01-01" max="{% now 'Y-m-d' %}">
+    </div>
+    <div class="col-sm-auto">
+      <label for="dateFrom" class="form-label mb-1 mt-2">водохранилище:</label>
+      <select id="selectReservoirs" class="form-select" name ="selectReservoirs"></select>
+    </div>
+    <div class="row justify-content-end mb-2">
+      <div class="col-sm-auto">
+        <button id="updateButton" type="button" class="btn btn-dark mt-3">Показать</button>
       </div>
     </div>
   </div>
   <div class="col-md-8">
-    <div class="row">
-      <canvas id="levelsChart"></canvas>
-    </div>
-    <div class="row">
-      <canvas id="flowsChart"></canvas>
+    <div class="row justify-content-center mb-2">
+      <div class="row">
+        <canvas id="levelsChart" width="400" height="225"></canvas>
+      </div>
+      <div class="row">
+        <canvas id="flowsChart" width="400" height="225"></canvas>
+      </div>
     </div>
   </div>
-  <div class="col col-sm">
+  <div class="col-md-1">
   </div>
 </div>
-
+{% block jquery %}
   <script>
-    function getUrl(){
-      var slug  = $("#selectReservoirs").find("option:selected").attr('val')
-      if (slug == null) {
-        slug = "sayano"
+    var reservoirs = [];
+
+    $.ajax({
+      url: "{% url 'reservoirs:v1:reservoir-list' %}",
+      success: function(data) {
+        reservoirs = data;
+        $("#selectReservoirs option").remove();
+        for (var i in data)
+          $("#selectReservoirs").append("<option val=" + data[i].slug + ">" + data[i].name + "</option>");
+        updateContent();
+      },          
+      error: function(error_data) {
+        console.log(error_data)
       }
-      var start = $("#dateFrom").val()
-      var end = $("#dateTo").val()
-      var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=" + slug + "&start=" + start + "&end=" + end
-      return url;
-    }
-    setCharts(getUrl())
+    });
+
     $(document).ready(function() {
-      $("#updateButton").click(function(){
-        setCharts(getUrl())
+      $("#updateButton").click(function() {
+        updateContent();
       });
     });
-    function setCharts(url){
+
+    $(document).ready(function() {
+      $("#dateFrom").bind("keydown", function(event) {
+        var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
+        if (keycode == 13) {
+          document.getElementById('updateButton').click();
+          return false;
+        } else {
+          return true;
+        }
+      });
+    });
+
+    $(document).ready(function() {
+      $("#dateTo").bind("keydown", function(event) {
+        var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
+        if (keycode == 13) {
+          document.getElementById('updateButton').click();
+          return false;
+        } else {
+          return true;
+        }
+      });
+    });
+
+    function updateContent() {
+      var slug  = $("#selectReservoirs").find("option:selected").attr('val');
+      var reservoir = getReservoir(slug);
+      var start = $("#dateFrom").val();
+      var end = $("#dateTo").val();
+      getSituations(reservoir, start, end);
+    };
+
+    function getReservoir(slug) {
+      if (slug == null) {
+        return reservoirs[0]
+      }
+      return reservoirs.find(r => r.slug == slug)
+    };
+
+    function getSituations(reservoir, start, end) {
+      var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=" + reservoir.slug
+      if (start !== null) {
+        url = url + "&start=" + start
+      }
+      if (end !== null) {
+        url = url + "&end=" + end
+      }
       $.ajax({
         method: "GET",
         url: url,
-        success: function(data){
-          let dates = []
-          let levels = []
-          let inflows = []
-          let outflows = []
-          let spillway = []
-
-          for(var i in data)
-            dates.push(data[i].date);
-          for(var i in data)
-            levels.push(data[i].level);
-          for(var i in data)
-            inflows.push(data[i].inflow);
-          for(var i in data)
-            outflows.push(data[i].outflow);
-          for(var i in data)
-            spillway.push(data[i].spillway);
-
-          levelsChart.data.labels = dates;
-          levelsChart.data.datasets[0].data = levels;
-          levelsChart.update();
-
-          flowsChart.data.labels = dates;
-          flowsChart.data.datasets[0].data = inflows;
-          flowsChart.data.datasets[1].data = outflows;
-          flowsChart.data.datasets[2].data = spillway;
-          flowsChart.update();
+        success: function(data) {
+          setCharts(reservoir, formatData(data));
         },
-        error: function(error_data){
-          console.log("error")
-          console.log(error_data)
+        error: function(error_data) {
+          console.log(error_data);
         }
-      })
+      });
     };
+
+    function formatData(data) {
+      let dates = []
+      let levels = []
+      let inflows = []
+      let outflows = []
+      let spillway = []
+
+      for(var i in data)
+        dates.push(data[i].date);
+      for(var i in data)
+        levels.push(data[i].level);
+      for(var i in data)
+        inflows.push(data[i].inflow);
+      for(var i in data)
+        outflows.push(data[i].outflow);
+      for(var i in data)
+        spillway.push(data[i].spillway);
+      return {
+        dates: dates,
+        levels: levels,
+        inflows: inflows,
+        outflows: outflows,
+        spillway: spillway
+      }
+    };
+
+    function setCharts(reservoir, data) {
+      levelsChart.options.plugins.title.display = true;
+      levelsChart.options.plugins.title.text = reservoir.name + " водохранилище";
+      levelsChart.options.plugins.subtitle.text = "ФПУ - " + reservoir.force_level
+        + " м, НПУ - " + reservoir.normal_level + " м, УМО - " + reservoir.dead_level + " м";
+      levelsChart.data.labels = data.dates;
+      levelsChart.data.datasets[0].data = data.levels;
+      levelsChart.update();
+
+      flowsChart.options.plugins.title.display = false;
+      flowsChart.options.plugins.title.text = "";
+      flowsChart.options.plugins.subtitle.text = "";
+      flowsChart.data.labels = data.dates;
+      flowsChart.data.datasets[0].data = data.inflows;
+      flowsChart.data.datasets[1].data = data.outflows;
+      flowsChart.data.datasets[2].data = data.spillway;
+      flowsChart.update();
+    };
+
     const flows_ctx = document.getElementById("flowsChart").getContext("2d");
     const levels_ctx = document.getElementById("levelsChart").getContext("2d");
+
     options = {
       scales: {
         y: {
@@ -152,6 +184,14 @@
           labels: {
               boxHeight: 0
           }
+        },
+        title: {
+          display: true,
+          padding: 3,
+        },
+        subtitle: {
+          display: true,
+          padding: 2,
         }
       }
     };
