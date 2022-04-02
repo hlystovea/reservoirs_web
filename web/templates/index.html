@@ -12,23 +12,21 @@
       </div>
     </div>
     <p class="lead mb-3 mt-4">Выбрать данные:</p>
-    <div class="row g-3">
+    <div class="row g-3 pl-4 pr-4">
       <div class="col-sm-6">
-        <label for="dateFrom" class="form-label">с</label>
+        <label for="dateFrom" class="form-label">Начало</label>
         <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value="2022-01-01" min="2013-01-01" max="{% now 'Y-m-d' %}">
       </div>
       <div class="col-sm-6">
-        <label for="dateTo" class="form-label">по</label>
+        <label for="dateTo" class="form-label">Конец</label>
         <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min="2013-01-01" max="{% now 'Y-m-d' %}">
       </div>
       <div class="col-sm-12">
-        <label for="selectReservoirs" class="form-label">водохранилище</label>
+        <label for="selectReservoirs" class="form-label">Водохранилище</label>
         <select id="selectReservoirs" class="form-select p-1" name ="selectReservoirs"></select>
       </div>
-      <div class="row justify-content-end mt-4 p-0">
-        <div class="col-sm-auto p-0">
-          <button id="updateButton" type="button" class="btn btn-dark pb-1 pt-1">Показать</button>
-        </div>
+      <div class="col-sm-12 mt-4">
+        <button id="updateButton" type="button" class="btn btn-dark btn-block pb-1 pt-1">Показать</button>
       </div>
     </div>
   </div>
@@ -98,8 +96,8 @@
       var reservoir = getReservoir(slug);
       var start = $("#dateFrom").val();
       var end = $("#dateTo").val();
-      setInfo(reservoir);
       getSituations(reservoir, start, end);
+      setInfo(reservoir);
     };
 
     function getReservoir(slug) {
@@ -122,6 +120,7 @@
         url: url,
         success: function(data) {
           setCharts(formatData(data));
+          setInfo(reservoir);
         },
         error: function(error_data) {
           console.log(error_data);
@@ -163,9 +162,9 @@
       if (reservoir.force_level !== null) {$("#infoTableBody").append("<tr><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>")};
       if (reservoir.normal_level !== null) {$("#infoTableBody").append("<tr><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>")};
       if (reservoir.dead_level !== null) {$("#infoTableBody").append("<tr><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>")};
-      if (reservoir.full_volume !== null) {$("#infoTableBody").append("<tr><td>Полный объём</td><td>" + reservoir.full_volume + " км3</td></tr>")};
-      if (reservoir.useful_volume !== null) {$("#infoTableBody").append("<tr><td>Полезный объём</td><td>" + reservoir.useful_volume + " км3</td></tr>")};
-      if (reservoir.area !== null) {$("#infoTableBody").append("<tr><td>Площадь</td><td>" + reservoir.area + " км2</td></tr>")};
+      if (reservoir.full_volume !== null) {$("#infoTableBody").append("<tr><td>Полный объём</td><td>" + reservoir.full_volume + " км\u00B3</td></tr>")};
+      if (reservoir.useful_volume !== null) {$("#infoTableBody").append("<tr><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>")};
+      if (reservoir.area !== null) {$("#infoTableBody").append("<tr><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>")};
       if (reservoir.max_depth !== null) {$("#infoTableBody").append("<tr><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>")};
     };
 
