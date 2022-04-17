@@ -15,11 +15,11 @@
     <div class="row g-3 pl-4 pr-4">
       <div class="col-sm-6">
         <label for="dateFrom" class="form-label">Начало</label>
-        <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value="2022-01-01" min="2013-01-01" max="{% now 'Y-m-d' %}">
+        <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value={{ default_date }} min={{ earlist_date }} max="{% now 'Y-m-d' %}">
       </div>
       <div class="col-sm-6">
         <label for="dateTo" class="form-label">Конец</label>
-        <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min="2013-01-01" max="{% now 'Y-m-d' %}">
+        <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min={{ earlist_date }} max="{% now 'Y-m-d' %}">
       </div>
       <div class="col-sm-12">
         <label for="selectReservoirs" class="form-label">Водохранилище</label>
@@ -46,7 +46,7 @@
 {% block jquery %}
   <script>
     var reservoirs = [];
-
+    // requesting a list of reservoirs
     $.ajax({
       url: "{% url 'reservoirs:v1:reservoir-list' %}",
       success: function(data) {
@@ -60,13 +60,13 @@
         console.log(error_data)
       }
     });
-
+    // updating content by click the button
     $(document).ready(function() {
       $("#updateButton").click(function() {
         updateContent();
       });
     });
-
+    // updating content by press Enter in dateFrom form
     $(document).ready(function() {
       $("#dateFrom").bind("keydown", function(event) {
         var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
@@ -78,7 +78,7 @@
         }
       });
     });
-
+    // updating content by press Enter in dateTo form
     $(document).ready(function() {
       $("#dateTo").bind("keydown", function(event) {
         var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
@@ -108,7 +108,7 @@
     };
 
     function getSituations(reservoir, start, end) {
-      var url = "{% url 'reservoirs:v1:situation-list' %}?reservoir=" + reservoir.slug
+      var url = "{% url 'reservoirs:situation-list' %}?reservoir=" + reservoir.slug
       if (start !== null) {
         url = url + "&start=" + start
       }
@@ -134,6 +134,7 @@
       let inflows = []
       let outflows = []
       let spillway = []
+      let avg_inflows = []
 
       for(var i in data)
         dates.push(data[i].date);
@@ -145,12 +146,15 @@
         outflows.push(data[i].outflow);
       for(var i in data)
         spillway.push(data[i].spillway);
+      for(var i in data)
+        avg_inflows.push(data[i].avg_inflow);
       return {
         dates: dates,
         levels: levels,
         inflows: inflows,
         outflows: outflows,
-        spillway: spillway
+        spillway: spillway,
+        avg_inflows: avg_inflows
       }
     };
 
@@ -177,6 +181,7 @@
       flowsChart.data.datasets[0].data = data.inflows;
       flowsChart.data.datasets[1].data = data.outflows;
       flowsChart.data.datasets[2].data = data.spillway;
+      flowsChart.data.datasets[3].data = data.avg_inflows;
       flowsChart.update();
     };
 
@@ -243,6 +248,14 @@
         data: [],
         backgroundColor: "rgba(153, 102, 255, 0.2)",
         borderColor: "rgba(153, 102, 255, 1)",
+        borderWidth: 1,
+        fill: true,
+      },
+      {
+        label: "Приток сред. многолетний, м\u00B3/с",
+        data: [],
+        backgroundColor: "rgba(201, 203, 207, 0.2)",
+        borderColor: "rgba(201, 203, 207, 1)",
         borderWidth: 1,
         fill: true,
       }]

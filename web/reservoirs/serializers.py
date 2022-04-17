@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import FloatField, ModelSerializer
 
 from reservoirs.models import Reservoir, WaterSituation
 
@@ -10,6 +10,8 @@ class ReservoirSerializer(ModelSerializer):
 
 
 class WaterSituationSerializer(ModelSerializer):
+    avg_inflow = FloatField(required=False)
+
     class Meta:
         model = WaterSituation
         fields = '__all__'
