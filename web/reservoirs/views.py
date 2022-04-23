@@ -22,29 +22,25 @@ class WaterSituationsView(APIView):
     def get(self, request):
         slug = request.query_params.get('reservoir', 'sayano')
         start = date_parse(request.query_params.get('start', get_earlist_date()))  # noqa(E501)
-        end = date_parse(request.query_params.get('end', now().date()))
+        end = date_parse(request.query_params.get('end', now().date().isoformat()))  # noqa(E501)
 
         reservoir = get_object_or_404(Reservoir, slug=slug)
 
-        objs = WaterSituation.objects.raw(
-            raw_query='''
-            SELECT ws1.*, ws2.day_of_year, ws2.avg_inflow
-            FROM water_situation AS ws1
-            LEFT JOIN (
-                SELECT
-                    DATE_PART('doy', date) AS  day_of_year,
-                    AVG(inflow) AS avg_inflow,
-                    reservoir_id
-                FROM water_situation
-                GROUP BY day_of_year, reservoir_id
-            ) AS ws2
-            ON DATE_PART('doy', ws1.date) = ws2.day_of_year
-              AND ws1.reservoir_id = ws2.reservoir_id
-            WHERE ws1.reservoir_id = %s AND ws1.date BETWEEN %s AND %s
-            ORDER BY ws1.date ASC
-            ''',
-            params=[reservoir.id, start, end],
-        )
+        raw_query = '''
+            WITH ws AS (
+            SELECT *, avg(inflow) OVER w AS avg_inflow
+            FROM water_situation
+            WHERE reservoir_id = %s
+            WINDOW w AS (PARTITION BY DATE_PART('doy', date))
+            )
+            SELECT *
+            FROM ws
+            WHERE date BETWEEN %s AND %s
+            ORDER BY date
+        '''
+        params = [reservoir.id, start, end]
+
+        objs = WaterSituation.objects.raw(raw_query=raw_query, params=params)
 
         serializer = WaterSituationSerializer(objs, many=True)
         return Response(serializer.data)
