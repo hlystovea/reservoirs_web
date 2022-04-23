@@ -10,7 +10,7 @@ class ReservoirSerializer(ModelSerializer):
 
 
 class WaterSituationSerializer(ModelSerializer):
-    avg_inflow = FloatField(required=False)
+    avg_inflow = FloatField(read_only=True)
 
     class Meta:
         model = WaterSituation
