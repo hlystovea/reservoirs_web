@@ -1,23 +1,21 @@
 import asyncio
-import datetime
+import datetime as dt
 import logging
 from logging.handlers import RotatingFileHandler
 from os import environ
-from typing import Dict, List, Optional
+from typing import List
 
-import aiohttp
-from bs4 import BeautifulSoup
-from bs4.element import ResultSet
-from pydantic import ValidationError
+from aiohttp import ClientError, ClientSession
 
 from db.postgres import PostgresDB
-from db.schemas import Reservoir, WaterSituation
+from db.schemas import WaterSituation
+from parsers import AbstractParser, RushydroParser
 
 DATABASE_URL = environ.get('DATABASE_URL')
-DATE_FORMAT = environ.get('DATE_FORMAT', '%d.%m.%Y')
-BASE_URL = environ.get('BASE_URL', 'http://www.rushydro.ru/hydrology/informer')
 SLEEP_TIME = int(environ.get('SLEEP_TIME', 3600))
-DELAY = int(environ.get('DELAY', 2))
+RH_LAST_DATE = environ.get('RH_LAST_DATE')
+if RH_LAST_DATE:
+    RH_LAST_DATE = dt.datetime.strptime(RH_LAST_DATE, '%d.%m.%Y').date()
 
 
 rotate_file_handler = RotatingFileHandler('logs/parsing.log', 5000000, 2)
@@ -30,102 +28,84 @@ logging.basicConfig(
 
 
 class Crawler:
-    def __init__(self, db: PostgresDB, delay: int, sleep_time: int):
-        self.delay: int = delay
-        self.sleep_time: int = sleep_time
-        self.is_running: Optional[bool] = False
-        self.db: PostgresDB = db
-        self._crawler_task: Optional[asyncio.Task] = None
+    def __init__(
+        self, db: PostgresDB,
+        parser: AbstractParser,
+        sleep_time: int,
+        last_date: dt.date = None
+    ):
+        self.db = db
+        self.parser = parser
+        self.sleep_time = sleep_time
+        self.last_date = last_date
+        self.is_running: bool = False
 
-    async def start(self):
-        await self.db.setup()
-        self.is_running = True
-        self._crawler_task = asyncio.create_task(self._worker())
-        logging.info('Start crawler')
-        await self._crawler_task
+    async def set_last_date(self):
+        reservoir = await self.db.get_reservoir_by_slug(slug=self.parser.slug)
+        self.last_date = await self.db.get_last_date(reservoir)
+        if not self.last_date:
+            self.last_date = self.parser.last_date
 
-    async def get_list_dates(self) -> List[datetime.date]:
-        last_date = await self.db.get_last_date() or datetime.date(2013, 4, 13)
-        num_days = (datetime.date.today() - last_date).days
-        return [last_date + datetime.timedelta(d) for d in range(num_days + 1)]
+    async def get_page(self, session: ClientSession, **kwargs) -> str:
+        url = await self.parser.get_url(**kwargs)
+        async with session.get(url=url, ssl=False) as r:
+            return await r.text()
 
-    async def save_to_db(self, objs: List[WaterSituation]):
+    async def save(self, objs: List[WaterSituation]):
         count = 0
         for obj in objs:
             if not await self.db.check_existence(obj):
                 try:
                     await self.db.insert_one(obj)
+                    self.last_date = obj.date
                     count += 1
                 except Exception as error:
                     logging.error(repr(error))
-        logging.info(f'Saved {count} new records')
-
-    async def values_normalizer(self, values: ResultSet) -> Dict:
-        keys = ['level', 'free_capacity', 'inflow', 'outflow', 'spillway']
-        values = [v.text.split()[0].split('м')[0] for v in values]
-        return dict(zip(keys, values))
-
-    async def parser(self, page: str, reservoirs: List[Reservoir]) -> List[WaterSituation]:  # noqa (E501)
-        logging.info('Start parser')
-        soup = BeautifulSoup(page, 'html.parser')
-        date_str = soup.find('input', id='popupDatepicker').get('value')
-        date = datetime.datetime.strptime(date_str, DATE_FORMAT).date()
-        logging.info(f'Parsed date: {date}')
-        result = []
-
-        for reservoir in reservoirs:
-            informer_data = soup.find(
-                'div',
-                class_=f'informer-block {reservoir.slug}',
-            )
-            if informer_data is None:
-                continue
-            num_values = informer_data.find_all('b')
-            normalized_values = await self.values_normalizer(num_values[3:])
-            normalized_values['date'] = date
-            normalized_values['reservoir_id'] = reservoir.id
-            try:
-                instance = WaterSituation.parse_obj(normalized_values)
-            except ValidationError as error:
-                logging.error(f'{reservoir.slug}: {repr(error)}')
-            else:
-                result.append(instance)
-        logging.info('Stop parser')
-        return result
+        logging.info(f'{self.__class__.__name__} saved {count} new records')
 
     async def _worker(self):
-        while self.is_running:
-            dates = await self.get_list_dates()
+        async with ClientSession() as session:
+            date = self.last_date - dt.timedelta(days=2)
             reservoirs = await self.db.get_all_reservoirs()
-            async with aiohttp.ClientSession() as session:
-                for date in dates:
-                    url = f'{BASE_URL}/?date={date.isoformat()}'
-                    async with session.get(url=url, ssl=False) as resp:
-                        page = await resp.text()
-                    try:
-                        water_situations = await self.parser(page, reservoirs)
-                        await self.save_to_db(water_situations)
-                    except (ValueError, AttributeError) as error:
-                        logging.error(repr(error))
-                    await asyncio.sleep(self.delay)
-            logging.info('Sleep crawler')
+            while self.last_date < dt.date.today() and date <= dt.date.today():
+                try:
+                    page = await self.get_page(session, date=date)
+                    objs = await self.parser.parsing(page, reservoirs)
+                    await self.save(objs)
+                except (ValueError, AttributeError, ClientError) as error:
+                    logging.error(repr(error))
+                date += dt.timedelta(days=1)
+                await asyncio.sleep(1)
+
+    async def _looper(self):
+        while self.is_running:
+            await self._worker()
+            logging.info(f'{self.__class__.__name__} worker sleep')
             await asyncio.sleep(self.sleep_time)
 
+    async def start(self):
+        await self.db.setup()
+        if self.last_date is None:
+            await self.set_last_date()
+        self.is_running = True
+        logging.info(f'{self.__class__.__name__} start worker')
+        await self._looper()
+
     async def stop(self):
+        logging.info(f'{self.__class__.__name__} stop worker')
         self.is_running = False
-        await self._crawler_task.cancel()
         await self.db.stop()
-        logging.info('Stop crawler')
 
 
 async def main():
     db = PostgresDB(DATABASE_URL)
-    crawler = Crawler(db, DELAY, SLEEP_TIME)
-    await crawler.start()
+    rh_parser = RushydroParser()
+    rh_crawler = Crawler(db, rh_parser, SLEEP_TIME, RH_LAST_DATE)
+    await asyncio.gather(rh_crawler.start())
 
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logging.info('Stop crawler')
+        logging.info('stop')
