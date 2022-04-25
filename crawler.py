@@ -9,13 +9,11 @@ from aiohttp import ClientError, ClientSession
 
 from db.postgres import PostgresDB
 from db.schemas import WaterSituation
-from parsers import AbstractParser, RushydroParser
+from parsers import AbstractParser, KrasParser, RushydroParser
+
 
 DATABASE_URL = environ.get('DATABASE_URL')
 SLEEP_TIME = int(environ.get('SLEEP_TIME', 3600))
-RH_LAST_DATE = environ.get('RH_LAST_DATE')
-if RH_LAST_DATE:
-    RH_LAST_DATE = dt.datetime.strptime(RH_LAST_DATE, '%d.%m.%Y').date()
 
 
 rotate_file_handler = RotatingFileHandler('logs/parsing.log', 5000000, 2)
@@ -44,7 +42,7 @@ class Crawler:
         reservoir = await self.db.get_reservoir_by_slug(slug=self.parser.slug)
         self.last_date = await self.db.get_last_date(reservoir)
         if not self.last_date:
-            self.last_date = self.parser.last_date
+            self.last_date = self.parser.first_date
 
     async def get_page(self, session: ClientSession, **kwargs) -> str:
         url = await self.parser.get_url(**kwargs)
@@ -57,10 +55,11 @@ class Crawler:
             if not await self.db.check_existence(obj):
                 try:
                     await self.db.insert_one(obj)
-                    self.last_date = obj.date
                     count += 1
                 except Exception as error:
                     logging.error(repr(error))
+                    continue
+            self.last_date = obj.date
         logging.info(f'{self.__class__.__name__} saved {count} new records')
 
     async def _worker(self):
@@ -70,10 +69,13 @@ class Crawler:
             while self.last_date < dt.date.today() and date <= dt.date.today():
                 try:
                     page = await self.get_page(session, date=date)
-                    objs = await self.parser.parsing(page, reservoirs)
+                    objs = await self.parser.parsing(
+                        page, date=date, reservoirs=reservoirs
+                    )
                     await self.save(objs)
                 except (ValueError, AttributeError, ClientError) as error:
                     logging.error(repr(error))
+                date = self.last_date if self.last_date > date else date
                 date += dt.timedelta(days=1)
                 await asyncio.sleep(1)
 
@@ -100,8 +102,10 @@ class Crawler:
 async def main():
     db = PostgresDB(DATABASE_URL)
     rh_parser = RushydroParser()
-    rh_crawler = Crawler(db, rh_parser, SLEEP_TIME, RH_LAST_DATE)
-    await asyncio.gather(rh_crawler.start())
+    kras_parser = KrasParser()
+    rh_crawler = Crawler(db, rh_parser, SLEEP_TIME)
+    kras_crawler = Crawler(db, kras_parser, SLEEP_TIME)
+    await asyncio.gather(rh_crawler.start(), kras_crawler.start())
 
 
 if __name__ == '__main__':
