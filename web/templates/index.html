@@ -7,9 +7,9 @@
       <div class="card bg-light">
         <div class="card-body py-1">
           <div class="row">
-            <div class="col-md-3" id="statTitle">
+            <div class="col-md-4" id="statTitle">
             </div>
-            <div class="col-md-9">
+            <div class="col-md-8">
               <table class="table table-sm table-borderless mb-0">
                 <tbody id="statTableBody">
                   <tr id="statTableHead">
@@ -240,6 +240,7 @@
       });
 
       $("#statTitle p").remove();
+      $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
 
       if (data.length > 1) {
         const len = data.length
@@ -256,9 +257,9 @@
         if (inflow > 0) inflow = "+" + inflow;
         if (outflow > 0) outflow = "+" + outflow;
         if (spillway > 0) spillway = "+" + spillway;
-        $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
+        $("#statTitle").append("<p class='text-muted mt-1'>" + actualDate + "</p>");
       } else {
-        $("#statTitle").append("<p class='lead mt-2 mb-0'>Нет данных за указанный период</p>");
+        $("#statTitle").append("<p class='text-muted mt-1'>Нет данных за указанный период</p>");
       }
 
     $("#statTableRow1 td").remove();
