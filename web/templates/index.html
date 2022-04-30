@@ -85,7 +85,7 @@
         for (var i in data)
           $("#selectReservoirs").append("<option id=" + data[i].slug + " val=" + data[i].slug + ">" + data[i].name + "</option>");
         let slug = getCookie('reservoir');
-        if (slug !== null) {
+        if (slug !== undefined) {
           document.getElementById(slug).selected = "true";
         }
         updateContent();
