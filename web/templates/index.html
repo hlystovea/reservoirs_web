@@ -1,51 +1,81 @@
 {% extends "base.html" %}
 {% block title %}Графики{% endblock %}
 {% block content %}
-<div class="row justify-content-xl-center mt-1">
-  <div class="col-md-3 mt-3">
-    <div class="card">
-      <div class="card-header" id="infoCardHeader"></div>
-      <div class="card-body">
-        <table class="table table-sm table-borderless mb-0">
-          <tbody id="infoTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <p class="lead mb-3 mt-4">Выбрать данные:</p>
-    <div class="row g-3 pl-4 pr-4">
-      <div class="col-sm-6">
-        <label for="dateFrom" class="form-label">Начало</label>
-        <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value={{ default_date }} min={{ earlist_date }} max="{% now 'Y-m-d' %}">
-      </div>
-      <div class="col-sm-6">
-        <label for="dateTo" class="form-label">Конец</label>
-        <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min={{ earlist_date }} max="{% now 'Y-m-d' %}">
-      </div>
-      <div class="col-sm-12">
-        <label for="selectReservoirs" class="form-label">Водохранилище</label>
-        <select id="selectReservoirs" class="form-select p-1" name ="selectReservoirs"></select>
-      </div>
-      <div class="col-sm-12 mt-4">
-        <button id="updateButton" type="button" class="btn btn-dark btn-block pb-1 pt-1">Показать</button>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-8 mt-2">
-    <div class="row justify-content-center">
-      <div class="row">
-        <canvas id="levelsChart"></canvas>
-      </div>
-      <div class="row">
-        <canvas id="flowsChart"></canvas>
+<div class="row justify-content-xl-center mt-4">
+  <div class="row">
+    <div class="col-lg-11">
+      <div class="card bg-light">
+        <div class="card-body py-1">
+          <div class="row">
+            <div class="col-md-3" id="statTitle">
+            </div>
+            <div class="col-md-9">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody id="statTableBody">
+                  <tr id="statTableHead">
+                    <th></th>
+                    <th><small><span style='color:#ffc58c'>Уровень</th>
+                    <th><small><span style='color:#ffa1b5'>Приток</th>
+                    <th><small><span style='color:#86c7f3'>Сброс</th>
+                    <th><small><span style='color:#b894ff'>Холостой сброс</th>
+                  </tr>
+                  <tr id="statTableRow1"></tr>
+                  <tr id="statTableRow2"></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-1">
+  <div class="row">
+    <div class="col-lg-3 mt-3">
+      <div class="card mt-2">
+        <div class="card-header">
+          <p class='lead mb-0'>Морфометрия</p>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm table-borderless mb-0">
+            <tbody id="infoTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <p class="lead mb-3 mt-4">Выбрать данные:</p>
+      <div class="row g-3 pl-4 pr-4">
+        <div class="col-sm-6">
+          <label for="dateFrom" class="form-label">Начало</label>
+          <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value={{ default_date }} min={{ earlist_date }} max="{% now 'Y-m-d' %}">
+        </div>
+        <div class="col-sm-6">
+          <label for="dateTo" class="form-label">Конец</label>
+          <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min={{ earlist_date }} max="{% now 'Y-m-d' %}">
+        </div>
+        <div class="col-sm-12">
+          <label for="selectReservoirs" class="form-label">Водохранилище</label>
+          <select id="selectReservoirs" class="form-select p-1" name ="selectReservoirs"></select>
+        </div>
+        <div class="col-sm-12 mt-4 mb-4">
+          <button id="updateButton" type="button" class="btn btn-dark btn-block pb-1 pt-1">Показать</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8 mt-3">
+      <div class="row justify-content-center">
+        <div class="row p-0">
+          <canvas id="levelsChart"></canvas>
+        </div>
+        <div class="row p-0">
+          <canvas id="flowsChart"></canvas>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% block jquery %}
   <script>
     var reservoirs = [];
+
     // requesting a list of reservoirs
     $.ajax({
       url: "{% url 'reservoirs:v1:reservoir-list' %}",
@@ -53,12 +83,22 @@
         reservoirs = data;
         $("#selectReservoirs option").remove();
         for (var i in data)
-          $("#selectReservoirs").append("<option val=" + data[i].slug + ">" + data[i].name + "</option>");
+          $("#selectReservoirs").append("<option id=" + data[i].slug + " val=" + data[i].slug + ">" + data[i].name + "</option>");
+        let slug = getCookie('reservoir');
+        if (slug !== null) {
+          document.getElementById(slug).selected = "true";
+        }
         updateContent();
       },          
       error: function(error_data) {
         console.log(error_data)
       }
+    });
+    // updating content by change the select
+    $(document).ready(function() {
+      $("#selectReservoirs").change(function() {
+        updateContent();
+      });
     });
     // updating content by click the button
     $(document).ready(function() {
@@ -92,10 +132,10 @@
     });
 
     function updateContent() {
-      var slug  = $("#selectReservoirs").find("option:selected").attr('val');
-      var reservoir = getReservoir(slug);
-      var start = $("#dateFrom").val();
-      var end = $("#dateTo").val();
+      let slug  = $("#selectReservoirs").find("option:selected").attr('val');
+      let reservoir = getReservoir(slug);
+      let start = $("#dateFrom").val();
+      let end = $("#dateTo").val();
       getSituations(reservoir, start, end);
       setInfo(reservoir);
     };
@@ -120,13 +160,29 @@
         url: url,
         success: function(data) {
           setCharts(formatData(data));
-          setInfo(reservoir);
+          setStat(reservoir, data);
+          setCookie("reservoir", reservoir.slug);
         },
         error: function(error_data) {
           console.log(error_data);
         }
       });
     };
+
+    function setCookie(name, value) {
+      document.cookie = name + "=" + (value || "") + "; path=/";
+    }
+
+    function getCookie(name) {
+      name += "=";
+      const cookiesDecoded = decodeURIComponent(document.cookie);
+      const cookiesArr = cookiesDecoded.split('; ');
+      let value;
+      cookiesArr.forEach(cookie => {
+          if (cookie.indexOf(name) === 0) value = cookie.substring(name.length);
+      })
+      return value;
+    }
 
     function formatData(data) {
       let dates = []
@@ -136,18 +192,15 @@
       let spillway = []
       let avg_inflows = []
 
-      for(var i in data)
-        dates.push(data[i].date);
-      for(var i in data)
-        levels.push(data[i].level);
-      for(var i in data)
-        inflows.push(data[i].inflow);
-      for(var i in data)
-        outflows.push(data[i].outflow);
-      for(var i in data)
-        spillway.push(data[i].spillway);
-      for(var i in data)
-        avg_inflows.push(data[i].avg_inflow);
+      $.each(data,function() {
+        dates.push(this.date);
+        levels.push(this.level);
+        inflows.push(this.inflow);
+        outflows.push(this.outflow);
+        spillway.push(this.spillway);
+        avg_inflows.push(this.avg_inflow);
+      });
+
       return {
         dates: dates,
         levels: levels,
@@ -159,10 +212,8 @@
     };
 
     function setInfo(reservoir) {
-      $("#infoCardHeader p").remove();
-      $("#infoCardHeader").append("<p class='lead mb-0'>" + reservoir.name + " водохранилище</p>");
-
       $("#infoTableBody tr").remove();
+
       if (reservoir.force_level !== null) {$("#infoTableBody").append("<tr><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>")};
       if (reservoir.normal_level !== null) {$("#infoTableBody").append("<tr><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>")};
       if (reservoir.dead_level !== null) {$("#infoTableBody").append("<tr><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>")};
@@ -170,6 +221,60 @@
       if (reservoir.useful_volume !== null) {$("#infoTableBody").append("<tr><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>")};
       if (reservoir.area !== null) {$("#infoTableBody").append("<tr><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>")};
       if (reservoir.max_depth !== null) {$("#infoTableBody").append("<tr><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>")};
+    };
+
+    function setStat(reservoir, data) {
+      let date = ""
+      let level = 0
+      let inflow = 0
+      let outflow = 0
+      let spillway = 0
+      let inflowVolume = 0
+      let outflowVolume = 0
+      let spillwayVolume = 0
+
+      $.each(data, function() {
+        inflowVolume += this.inflow * 864 / 10000000;
+        outflowVolume += this.outflow * 864 / 10000000;
+        spillwayVolume += this.spillway * 864 / 10000000;
+      });
+
+      $("#statTitle p").remove();
+
+      if (data.length > 1) {
+        const len = data.length
+        const actualDate = (new Date(data[len - 1].date)).toLocaleDateString('ru', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        level = (data[len - 1].level - data[len - 2].level).toFixed(2);
+        inflow = (data[data.length - 1].inflow - data[data.length - 2].inflow).toFixed(0);
+        outflow = (data[data.length - 1].outflow - data[data.length - 2].outflow).toFixed(0);
+        spillway = (data[data.length - 1].spillway - data[data.length - 2].spillway).toFixed(0);
+        if (level > 0) level = "+" + level;
+        if (inflow > 0) inflow = "+" + inflow;
+        if (outflow > 0) outflow = "+" + outflow;
+        if (spillway > 0) spillway = "+" + spillway;
+        $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
+      } else {
+        $("#statTitle").append("<p class='lead mt-2 mb-0'>Нет данных за указанный период</p>");
+      }
+
+    $("#statTableRow1 td").remove();
+    $("#statTableRow2 td").remove();
+    
+    $("#statTableRow1").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Изменения за сутки</td>");
+    $("#statTableRow1").append("<td><h4><span style='color:#ffc58c'>" + level + " м</td>");
+    $("#statTableRow1").append("<td><h4><span style='color:#ffa1b5'>" + inflow + " м\u00B3/с</td>");
+    $("#statTableRow1").append("<td><h4><span style='color:#86c7f3'>" + outflow + " м\u00B3/с</td>");
+    $("#statTableRow1").append("<td><h4><span style='color:#b894ff'>" + spillway + " м\u00B3/с</td>");
+
+    $("#statTableRow2").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
+    $("#statTableRow2").append("<td><small class='text-muted'>-</td>");
+    $("#statTableRow2").append("<td><small class='text-muted'>" + inflowVolume.toFixed(2) + " км\u00B3</td>");
+    $("#statTableRow2").append("<td><small class='text-muted'>" + outflowVolume.toFixed(2) + " км\u00B3</td>");
+    $("#statTableRow2").append("<td><small class='text-muted'>" + spillwayVolume.toFixed(2) + " км\u00B3</td>");
     };
 
     function setCharts(data) {
