@@ -7,7 +7,7 @@
     <div class="collapse navbar-collapse" id='navbarCollapse'>
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link  {% if index %}active{% endif %}" href="{% url 'index' %}">Графики</a></li>
-        <li class="nav-item"><a class="nav-link {% if updates %}active{% endif %}" href="">Последние изменения</a></li>
+        <li class="nav-item"><a class="nav-link {% if update_list %}active{% endif %}" href="{% url 'updates:update-list' %}">Последние изменения</a></li>
         <li class="nav-item"><a class="nav-link {% if about %}active{% endif %}" href="{% url 'about' %}">О проекте</a></li>
       </ul>
     </div>

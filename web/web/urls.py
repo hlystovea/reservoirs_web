@@ -11,6 +11,7 @@ urlpatterns = [
     path('about/', AboutPageView.as_view(), name='about'),
     path('admin/', admin.site.urls),
     path('api/', include('reservoirs.urls', namespace='reservoirs')),
+    path('', include('updates.urls', namespace='updates')),
 ]
 
 
