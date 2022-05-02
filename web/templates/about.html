@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}О проекте{% endblock %}
+{% block content %}
+<div class="row justify-content-xl-center mt-4">
+  <div class="row px-4">
+    <div class="card border-0 p-0">
+      <div class="row g-0">
+        <div class="col-md-4">
+          <img src="https://ucarecdn.com/069f7971-08b6-485d-bb5b-f11f61a23e26/-/preview/400x400/" class="rounded card-img-top" alt="Водосброс Красноярской ГЭС">
+        </div>
+        <div class="col-md-8">
+          <div class="card-body py-0 px-4">
+            <h5 class="card-title">О проекте</h5>
+            <p class="font-weight-light">
+              Проект помогает получить информацию о гидрологической обстановке водохранилищ ГЭС России в графическом виде.
+            </p>
+            <h5 class="card-title mt-4">Техническая часть</h5>
+            <p class="font-weight-light mb-1">
+              Проект включает в себя 3 микросервиса:
+            </p>
+            <ul class="mb-2">
+              <li>Сборщик данных</li>
+              <li>Telegram бот</li>
+              <li>Веб-сайт <small class="text-muted">&larr; вы находитесь здесь</small></li>
+            </ul>
+            <p class="font-weight-light mb-1">
+              Сборщик парсит сайты <a href="http://www.rushydro.ru/hydrology/informer/">РусГидро</a> и 
+              <a href="http://enbvu.ru/i03_deyatelnost/i03.07_2022.php">Енисейского БВУ</a>, валидирует данные и складывает их в базу.
+              В свою очередь, бот и сайт реализуют пользовательский интерфейс для построения графиков на основе сохраненных данных.
+            </p>
+            <p class="font-weight-light mb-1 mt-2">
+              Используемые технологии:
+            </p>
+            <ul class="mb-2">
+              <li>Python 3.9</li>
+              <li>Django (сайт, админка, управление миграциями)</li>
+              <li>PostgreSQL (база данных)</li>
+              <li>Docker (контейнеризация)</li>
+              <li>Nginx (раздача статики, проксирование)</li>
+              <li>Aiogram (бот)</li>
+              <li>Asynpg (асинхронный доступ к БД)</li>
+              <li>Pydantic (валидация)</li>
+              <li>Matplotlib (графики бота)</li>
+              <li>Chart.js (графики на сайте)</li>
+            </ul>
+            <p class="font-weight-light mb-1">
+              С исходный кодом проекта можно ознакомиться в репозитории на <a href="https://github.com/hlystovea/reservoirs_bot">GitHub</a>.
+            </p>
+            <p class="font-weight-light mb-1 mt-3"><small class="text-muted">Евгений Хлыстов</small></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+<!--
+  <div class="row justify-content-xl-center mt-4">
+  <div class="card p-0">
+    <img src="https://ucarecdn.com/069f7971-08b6-485d-bb5b-f11f61a23e26/-/scale_crop/1280x300/smart/" class="card-img-top" alt="Водосброс Красноярской ГЭС">
+    <div class="card-body">
+      <h5 class="card-title">О проекте</h5>
+      <p class="card-text">
+        Проект помогает получить актуальную информацию о гидрологической обстановке водохранилищ ГЭС России в удобном графическом виде.
+      </p>
+      <h5 class="card-title">Техническая часть</h5>
+      <p class="card-text mb-1">
+        Проект включает в себя 3 микросервиса:
+      </p>
+      <ul>
+        <li>Сборщик информации</li>
+        <li>Telgram бот</li>
+        <li>Веб сайт</li>
+      </ul>
+      <p class="card-text mb-1">
+      </p>
+      <p class="card-text"><small class="text-muted">Евгений Хлыстов</small></p>
+    </div>
+  </div>
+</div>
+
+  <div class="row px-4">
+    <div class="card p-0">
+      <div class="row g-0">
+        <div class="col-md-4">
+          <img src="https://ucarecdn.com/069f7971-08b6-485d-bb5b-f11f61a23e26/-/preview/400x400/" class="card-img-top" alt="Водосброс Красноярской ГЭС">
+        </div>
+        <div class="col-md-8">
+          <div class="card-body">
+            <h5 class="card-title">О проекте</h5>
+            <p class="card-text">
+              Проект помогает получить актуальную информацию о гидрологической обстановке водохранилищ ГЭС России в удобном графическом виде.
+            </p>
+            <h5 class="card-title">Техническая часть</h5>
+            <p class="card-text mb-1">
+              Проект включает в себя 3 микросервиса:
+            </p>
+            <ul>
+              <li>Сборщик информации</li>
+              <li>Telgram бот</li>
+              <li>Веб сайт</li>
+            </ul>
+            <p class="card-text mb-1">
+              
+            </p>
+            <p class="card-text"><small class="text-muted">Евгений Хлыстов</small></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+-->
