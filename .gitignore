@@ -14,3 +14,4 @@ levels_new.sqlite
 .env
 levels.sqlite
 *static/
+*media/

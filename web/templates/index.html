@@ -2,28 +2,26 @@
 {% block title %}Графики{% endblock %}
 {% block content %}
 <div class="row justify-content-xl-center mt-4">
-  <div class="row">
-    <div class="col-lg-11">
-      <div class="card bg-light">
-        <div class="card-body py-1">
-          <div class="row">
-            <div class="col-md-4" id="statTitle">
-            </div>
-            <div class="col-md-8">
-              <table class="table table-sm table-borderless mb-0">
-                <tbody id="statTableBody">
-                  <tr id="statTableHead">
-                    <th></th>
-                    <th><small><span style='color:#ffc58c'>Уровень</th>
-                    <th><small><span style='color:#ffa1b5'>Приток</th>
-                    <th><small><span style='color:#86c7f3'>Сброс</th>
-                    <th><small><span style='color:#b894ff'>Холостой сброс</th>
-                  </tr>
-                  <tr id="statTableRow1"></tr>
-                  <tr id="statTableRow2"></tr>
-                </tbody>
-              </table>
-            </div>
+  <div class="row px-4">
+    <div class="card shadow-sm">
+      <div class="card-body py-1">
+        <div class="row">
+          <div class="col-lg-3" id="statTitle">
+          </div>
+          <div class="col-lg-9">
+            <table class="table table-sm table-borderless mb-0">
+              <tbody id="statTableBody">
+                <tr id="statTableHead">
+                  <th></th>
+                  <th><small><span style='color:#ffc58c'>Уровень</th>
+                  <th><small><span style='color:#ffa1b5'>Приток</th>
+                  <th><small><span style='color:#86c7f3'>Сброс</th>
+                  <th><small><span style='color:#b894ff'>Холостой сброс</th>
+                </tr>
+                <tr id="statTableRow1"></tr>
+                <tr id="statTableRow2"></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -31,8 +29,8 @@
   </div>
   <div class="row">
     <div class="col-lg-3 mt-3">
-      <div class="card mt-2">
-        <div class="card-header">
+      <div class="card shadow-sm mt-2">
+        <div class="card-header bg-white">
           <p class='lead mb-0'>Морфометрия</p>
         </div>
         <div class="card-body">
@@ -60,7 +58,7 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-8 mt-3">
+    <div class="col-lg-9 mt-3">
       <div class="row justify-content-center">
         <div class="row p-0">
           <canvas id="levelsChart"></canvas>
@@ -257,7 +255,7 @@
         if (inflow > 0) inflow = "+" + inflow;
         if (outflow > 0) outflow = "+" + outflow;
         if (spillway > 0) spillway = "+" + spillway;
-        $("#statTitle").append("<p class='text-muted mt-1'>" + actualDate + "</p>");
+        $("#statTitle").append("<p class='text-muted mt-1'>по состоянию на " + actualDate + "</p>");
       } else {
         $("#statTitle").append("<p class='text-muted mt-1'>Нет данных за указанный период</p>");
       }
@@ -266,10 +264,10 @@
     $("#statTableRow2 td").remove();
     
     $("#statTableRow1").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Изменения за сутки</td>");
-    $("#statTableRow1").append("<td><h4><span style='color:#ffc58c'>" + level + " м</td>");
-    $("#statTableRow1").append("<td><h4><span style='color:#ffa1b5'>" + inflow + " м\u00B3/с</td>");
-    $("#statTableRow1").append("<td><h4><span style='color:#86c7f3'>" + outflow + " м\u00B3/с</td>");
-    $("#statTableRow1").append("<td><h4><span style='color:#b894ff'>" + spillway + " м\u00B3/с</td>");
+    $("#statTableRow1").append("<td><h5><span style='color:#ffc58c'>" + level + " м</td>");
+    $("#statTableRow1").append("<td><h5><span style='color:#ffa1b5'>" + inflow + " м\u00B3/с</td>");
+    $("#statTableRow1").append("<td><h5><span style='color:#86c7f3'>" + outflow + " м\u00B3/с</td>");
+    $("#statTableRow1").append("<td><h5><span style='color:#b894ff'>" + spillway + " м\u00B3/с</td>");
 
     $("#statTableRow2").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
     $("#statTableRow2").append("<td><small class='text-muted'>-</td>");

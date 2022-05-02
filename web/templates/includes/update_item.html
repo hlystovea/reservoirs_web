@@ -1,0 +1,22 @@
+<div class="card mb-3 p-1 shadow-sm">
+  <div class="row g-0">
+    <!-- Отображение картинки -->
+    <div class="col-md-2">
+      <div class="card shadow-sm">
+        {% load thumbnail %}
+        {% thumbnail update.image "480" crop="center" upscale=True as image %}
+          <img class="card-img-top" src="{{ image.url }}" alt="Картинка">
+        {% endthumbnail %}
+      </div>
+    </div>
+    <!-- Отображение текста поста -->
+    <div class="col-md-9">
+      <div class="card-body py-0">
+        <p class="card-text">
+          {{ update.text|linebreaksbr }}
+        </p>
+        <small class="text-muted">{{ update.pub_date }}</small>
+      </div>
+    </div>
+  </div>
+</div>

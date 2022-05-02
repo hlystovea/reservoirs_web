@@ -3,13 +3,15 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from core.views import IndexPageView
+from core.views import AboutPageView, IndexPageView
 
 
 urlpatterns = [
     path('', IndexPageView.as_view(), name='index'),
+    path('about/', AboutPageView.as_view(), name='about'),
     path('admin/', admin.site.urls),
     path('api/', include('reservoirs.urls', namespace='reservoirs')),
+    path('', include('updates.urls', namespace='updates')),
 ]
 
 
