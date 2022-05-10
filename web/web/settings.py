@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'reservoirs.apps.ReservoirsConfig',
     'common.apps.CommonConfig',
     'updates.apps.UpdatesConfig',
+    'weather.apps.WeatherConfig',
     'sorl.thumbnail',
 ]
 
