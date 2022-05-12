@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, root_validator
@@ -40,3 +40,34 @@ class Region(BaseModel):
     id: Optional[int]
     name: str
     slug: str
+
+
+class Weather(BaseModel):
+    date: datetime
+    city: int
+    temp: float
+    pressure: int
+    humidity: int
+    cloudiness: int
+    wind_speed: float
+    wind_direction: int
+    precipitation: float
+    is_observable: bool
+
+
+class Gismeteo(Weather):
+    def __init__(self, **kwargs):
+        kwargs['city'] = kwargs['city']
+        kwargs['temp'] = kwargs['temperature']['air']['C']
+        kwargs['pressure'] = kwargs['pressure']['mm_hg_atm']
+        kwargs['humidity'] = kwargs['humidity']['percent']
+        kwargs['cloudiness'] = kwargs['cloudiness']['percent']
+        kwargs['wind_speed'] = kwargs['wind']['direction']['scale_8']
+        kwargs['wind_direction'] = kwargs['wind']['speed']['m_s']
+        kwargs['precipitation'] = kwargs['precipitation']['amount']
+        kwargs['is_observable'] = True if kwargs['kind'] == 'Obs' else False
+        if kwargs.get('date'):
+            kwargs['date'] = datetime.strptime(
+                kwargs['date']['UTC'], '%Y-%m-%d %H:%M:%S'
+            )
+        super().__init__(**kwargs)
