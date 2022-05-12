@@ -10,7 +10,8 @@ from bs4 import BeautifulSoup
 from bs4.element import ResultSet
 from pydantic import ValidationError
 
-from db.schemas import Reservoir, WaterSituation
+from db.postgres import PostgresDB
+from db.schemas import WaterSituation
 
 
 rotate_file_handler = RotatingFileHandler('logs/parsing.log', 5000000, 2)
@@ -23,9 +24,14 @@ logging.basicConfig(
 
 
 class AbstractParser(metaclass=ABCMeta):
+    db: PostgresDB
     slug: str
     base_url: str
     first_date: dt.date
+
+    @abstractmethod
+    def get_date(self) -> dt.date:
+        pass
 
     @abstractmethod
     def get_url(self) -> str:
@@ -47,6 +53,13 @@ class RushydroParser(AbstractParser):
         'RUSHYDRO_URL', 'http://www.rushydro.ru/hydrology/informer'
     )
 
+    def __init__(self, db):
+        self.db = db
+
+    async def get_date(self):
+        date = await self.db.get_last_date()
+        return date or self.first_date
+
     async def get_url(self, **kwargs) -> str:
         if 'date' in kwargs:
             return f'{self.base_url}/?date={kwargs["date"].isoformat()}'
@@ -59,13 +72,14 @@ class RushydroParser(AbstractParser):
 
     async def parsing(self, page: str, **kwargs) -> List[WaterSituation]:
         logging.info(f'{self.__class__.__name__} start parsing')
-        reservoirs: List[Reservoir] = kwargs['reservoirs']
+
         soup = BeautifulSoup(page, 'html.parser')
         date_str = soup.find('input', id='popupDatepicker').get('value')
         date = dt.datetime.strptime(date_str, '%d.%m.%Y').date()
         logging.info(f'{self.__class__.__name__} parsed date - {date}')
         result = []
 
+        reservoirs = await self.db.get_all_reservoirs()
         for reservoir in reservoirs:
             informer_data = soup.find(
                 'div',
@@ -107,6 +121,13 @@ class KrasParser(AbstractParser):
         12: 'dec',
     }
 
+    def __init__(self, db):
+        self.db = db
+
+    async def get_date(self):
+        date = await self.db.get_last_date()
+        return date or self.first_date
+
     async def get_url(self, **kwargs) -> str:
         date: dt.date = kwargs['date']
 
@@ -129,8 +150,7 @@ class KrasParser(AbstractParser):
         soup = BeautifulSoup(page, 'html.parser')
         iul_class = soup.find_all('div', class_='iul_day_1')
 
-        reservoirs: List[Reservoir] = kwargs['reservoirs']
-        reservoir = [r for r in reservoirs if r.slug == self.slug][0]
+        reservoir = await self.db.get_reservoir_by_slug(self.slug)
         result = []
 
         for block in iul_class:
