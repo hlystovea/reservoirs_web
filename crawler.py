@@ -27,22 +27,19 @@ logging.basicConfig(
 
 class Crawler:
     def __init__(
-        self, db: PostgresDB,
+        self,
+        db: PostgresDB,
         parser: AbstractParser,
-        sleep_time: int,
-        last_date: dt.date = None
+        sleep_time: int = 3600
     ):
         self.db = db
         self.parser = parser
         self.sleep_time = sleep_time
-        self.last_date = last_date
         self.is_running: bool = False
 
-    async def set_last_date(self):
-        reservoir = await self.db.get_reservoir_by_slug(slug=self.parser.slug)
-        self.last_date = await self.db.get_last_date(reservoir)
-        if not self.last_date:
-            self.last_date = self.parser.first_date
+    async def get_date(self):
+        date = await self.db.get_last_date()
+        return date or self.parser.first_date
 
     async def get_page(self, session: ClientSession, **kwargs) -> str:
         url = await self.parser.get_url(**kwargs)
@@ -64,9 +61,9 @@ class Crawler:
 
     async def _worker(self):
         async with ClientSession() as session:
-            date = self.last_date - dt.timedelta(days=2)
+            date = await self.get_date()
             reservoirs = await self.db.get_all_reservoirs()
-            while self.last_date < dt.date.today() and date <= dt.date.today():
+            while date <= dt.date.today():
                 try:
                     page = await self.get_page(session, date=date)
                     objs = await self.parser.parsing(
@@ -75,7 +72,6 @@ class Crawler:
                     await self.save(objs)
                 except (ValueError, AttributeError, ClientError) as error:
                     logging.error(repr(error))
-                date = self.last_date if self.last_date > date else date
                 date += dt.timedelta(days=1)
                 await asyncio.sleep(1)
 
@@ -87,8 +83,6 @@ class Crawler:
 
     async def start(self):
         await self.db.setup()
-        if self.last_date is None:
-            await self.set_last_date()
         self.is_running = True
         logging.info(f'{self.__class__.__name__} start worker')
         await self._looper()

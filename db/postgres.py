@@ -55,16 +55,16 @@ class PostgresDB:
                 obj.reservoir_id,
             )
 
-    async def get_last_date(self, reservoir: Reservoir) -> Optional[dt.date]:
+    async def get_last_date(self) -> Optional[dt.date]:
         async with self.pool.acquire() as conn:
             return await conn.fetchval(
                 '''
-                SELECT date
+                SELECT MAX(date) AS last_date
                 FROM water_situation
-                WHERE reservoir_id = $1
-                ORDER BY date DESC;
-                ''',
-                reservoir.id,
+                GROUP BY reservoir_id
+                ORDER BY last_date
+                LIMIT 1
+                '''
             )
 
     async def get_reservoir_by_slug(self, slug: str) -> Optional[Reservoir]:
