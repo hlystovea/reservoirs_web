@@ -3,12 +3,10 @@ import datetime as dt
 import logging
 from logging.handlers import RotatingFileHandler
 from os import environ
-from typing import List
 
 from aiohttp import ClientError, ClientSession
 
 from db.postgres import PostgresDB
-from db.schemas import WaterSituation
 from parsers import AbstractParser, KrasParser, RushydroParser
 
 
@@ -35,22 +33,10 @@ class Crawler:
         self.sleep_time = sleep_time
         self.is_running: bool = False
 
-    async def get_page(self, session: ClientSession, **kwargs) -> str:
-        url = await self.parser.get_url(**kwargs)
+    async def get_page(self, session: ClientSession, date: dt.date) -> str:
+        url = await self.parser.get_url(date)
         async with session.get(url=url, ssl=False) as r:
             return await r.text()
-
-    async def save(self, objs: List[WaterSituation]):
-        count = 0
-        for obj in objs:
-            if not await self.parser.db.check_existence(obj):
-                try:
-                    await self.parser.db.insert_one(obj)
-                    count += 1
-                except Exception as error:
-                    logging.error(repr(error))
-                    continue
-        logging.info(f'{self.__class__.__name__} saved {count} new records')
 
     async def _worker(self):
         async with ClientSession() as session:
@@ -59,7 +45,7 @@ class Crawler:
                 try:
                     page = await self.get_page(session, date=date)
                     objs = await self.parser.parsing(page, date=date)
-                    await self.save(objs)
+                    await self.parser.save(objs)
                 except (ValueError, AttributeError, ClientError) as error:
                     logging.error(repr(error))
                 date += dt.timedelta(days=1)

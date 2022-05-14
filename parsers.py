@@ -45,14 +45,12 @@ class AbstractParser(metaclass=ABCMeta):
     def parsing(self):
         pass
 
+    @abstractmethod
+    def save(self):
+        pass
 
-class RushydroParser(AbstractParser):
-    slug: str = 'sayano'
-    first_date: dt.date = dt.date(2013, 4, 13)
-    base_url: str = environ.get(
-        'RUSHYDRO_URL', 'http://www.rushydro.ru/hydrology/informer'
-    )
 
+class WaterSituationMixin(AbstractParser):
     def __init__(self, db):
         self.db = db
 
@@ -60,10 +58,28 @@ class RushydroParser(AbstractParser):
         date = await self.db.get_last_date()
         return date or self.first_date
 
-    async def get_url(self, **kwargs) -> str:
-        if 'date' in kwargs:
-            return f'{self.base_url}/?date={kwargs["date"].isoformat()}'
-        return self.base_url
+    async def save(self, objs: List[WaterSituation]):
+        count = 0
+        for obj in objs:
+            if not await self.db.check_existence(obj):
+                try:
+                    await self.db.insert_one(obj)
+                    count += 1
+                except Exception as error:
+                    logging.error(repr(error))
+                    continue
+        logging.info(f'{self.__class__.__name__} saved {count} new records')
+
+
+class RushydroParser(WaterSituationMixin):
+    slug: str = 'sayano'
+    first_date: dt.date = dt.date(2013, 4, 13)
+    base_url: str = environ.get(
+        'RUSHYDRO_URL', 'http://www.rushydro.ru/hydrology/informer'
+    )
+
+    async def get_url(self, date: dt.date) -> str:
+        return f'{self.base_url}/?date={date.isoformat()}'
 
     async def preprocessing(self, values: ResultSet) -> Dict:
         keys = ['level', 'free_capacity', 'inflow', 'outflow', 'spillway']
@@ -77,10 +93,9 @@ class RushydroParser(AbstractParser):
         date_str = soup.find('input', id='popupDatepicker').get('value')
         date = dt.datetime.strptime(date_str, '%d.%m.%Y').date()
         logging.info(f'{self.__class__.__name__} parsed date - {date}')
-        result = []
 
-        reservoirs = await self.db.get_all_reservoirs()
-        for reservoir in reservoirs:
+        result = []
+        for reservoir in await self.db.get_all_reservoirs():
             informer_data = soup.find(
                 'div',
                 class_=f'informer-block {reservoir.slug}',
@@ -101,7 +116,7 @@ class RushydroParser(AbstractParser):
         return result
 
 
-class KrasParser(AbstractParser):
+class KrasParser(WaterSituationMixin):
     slug: str = 'kras'
     first_date: dt.date = dt.date(2021, 7, 1)
     base_url: str = environ.get('KRAS_URL', 'http://enbvu.ru/i03_deyatelnost')
@@ -121,16 +136,7 @@ class KrasParser(AbstractParser):
         12: 'dec',
     }
 
-    def __init__(self, db):
-        self.db = db
-
-    async def get_date(self):
-        date = await self.db.get_last_date()
-        return date or self.first_date
-
-    async def get_url(self, **kwargs) -> str:
-        date: dt.date = kwargs['date']
-
+    async def get_url(self, date: dt.date) -> str:
         num_year = date.year - self.first_date.year
         num_month = date.month - self.first_date.month
         page_number = num_year * 12 + num_month + 1
@@ -144,15 +150,14 @@ class KrasParser(AbstractParser):
         values = [float(v.replace(",", ".")) for v in values]
         return dict(zip(keys, values))
 
-    async def parsing(self, page: str, **kwargs) -> List[WaterSituation]:
+    async def parsing(self, page: str, date: dt.date) -> List[WaterSituation]:
         logging.info(f'{self.__class__.__name__} start parsing')
-        date: dt.date = kwargs['date']
+
         soup = BeautifulSoup(page, 'html.parser')
         iul_class = soup.find_all('div', class_='iul_day_1')
-
         reservoir = await self.db.get_reservoir_by_slug(self.slug)
-        result = []
 
+        result = []
         for block in iul_class:
             if not block.find('div', class_='date'):
                 continue
