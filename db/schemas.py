@@ -42,9 +42,20 @@ class Region(BaseModel):
     slug: str
 
 
+class GeoObject(BaseModel):
+    id: Optional[int]
+    name: str
+    slug: str
+    station_id: Optional[int]
+    gismeteo_id: Optional[int]
+    latitude: Optional[float]
+    longitude: Optional[float]
+
+
 class Weather(BaseModel):
+    id: Optional[int]
     date: datetime
-    city: int
+    geo_object_id: Optional[int]
     temp: float
     pressure: int
     humidity: int
@@ -57,7 +68,6 @@ class Weather(BaseModel):
 
 class Gismeteo(Weather):
     def __init__(self, **kwargs):
-        kwargs['city'] = kwargs['city']
         kwargs['temp'] = kwargs['temperature']['air']['C']
         kwargs['pressure'] = kwargs['pressure']['mm_hg_atm']
         kwargs['humidity'] = kwargs['humidity']['percent']
@@ -66,8 +76,7 @@ class Gismeteo(Weather):
         kwargs['wind_direction'] = kwargs['wind']['speed']['m_s']
         kwargs['precipitation'] = kwargs['precipitation']['amount']
         kwargs['is_observable'] = True if kwargs['kind'] == 'Obs' else False
-        if kwargs.get('date'):
-            kwargs['date'] = datetime.strptime(
-                kwargs['date']['UTC'], '%Y-%m-%d %H:%M:%S'
-            )
+        kwargs['date'] = datetime.strptime(
+            kwargs['date']['UTC'], '%Y-%m-%d %H:%M:%S'
+        )
         super().__init__(**kwargs)

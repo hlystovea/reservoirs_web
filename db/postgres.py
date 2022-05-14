@@ -6,7 +6,7 @@ from typing import List, Optional
 import asyncpg
 from pydantic import parse_obj_as
 
-from db.schemas import Region, Reservoir, WaterSituation
+from db.schemas import GeoObject, Region, Reservoir, WaterSituation, Weather
 
 
 class PostgresDB:
@@ -40,6 +40,27 @@ class PostgresDB:
                 obj.reservoir_id,
             )
 
+    async def insert_one_geo(self, obj: Weather) -> asyncpg.Record:
+        async with self.pool.acquire() as conn:
+            return await conn.fetchrow(
+                '''
+                INSERT INTO weather_weather (date, temp, pressure,
+                humidity, cloudiness, wind_speed, wind_direction,
+                precipitation, is_observable, geo_object_id)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
+                ''',
+                obj.date,
+                obj.temp,
+                obj.pressure,
+                obj.humidity,
+                obj.cloudiness,
+                obj.wind_speed,
+                obj.wind_direction,
+                obj.precipitation,
+                obj.is_observable,
+                obj.geo_object_id,
+            )
+
     async def check_existence(self, obj) -> bool:
         async with self.pool.acquire() as conn:
             return await conn.fetchval(
@@ -53,6 +74,21 @@ class PostgresDB:
                 ''',
                 obj.date,
                 obj.reservoir_id,
+            )
+
+    async def check_existence_weather(self, obj) -> bool:
+        async with self.pool.acquire() as conn:
+            return await conn.fetchval(
+                '''
+                SELECT EXISTS (
+                    SELECT *
+                    FROM weather_weather
+                    WHERE date=$1 AND geo_object_id=$2
+                    LIMIT 1
+                );
+                ''',
+                obj.date,
+                obj.geo_object_id,
             )
 
     async def get_last_date(self) -> Optional[dt.date]:
@@ -89,6 +125,11 @@ class PostgresDB:
         async with self.pool.acquire() as conn:
             result = await conn.fetch('SELECT * FROM regions;')
             return parse_obj_as(List[Region], result)
+
+    async def get_all_geo_objects(self) -> List[GeoObject]:
+        async with self.pool.acquire() as conn:
+            result = await conn.fetch('SELECT * FROM weather_geoobject;')
+            return parse_obj_as(List[GeoObject], result)
 
     async def get_reservoirs_by_region(
         self, region_slug: str

@@ -1,13 +1,10 @@
 import asyncio
-import datetime as dt
 import logging
 from logging.handlers import RotatingFileHandler
 from os import environ
 
-from aiohttp import ClientError, ClientSession
-
 from db.postgres import PostgresDB
-from parsers import AbstractParser, KrasParser, RushydroParser
+from parsers import AbstractParser, GismeteoParser, KrasParser, RushydroParser
 
 
 DATABASE_URL = environ.get('DATABASE_URL')
@@ -33,27 +30,9 @@ class Crawler:
         self.sleep_time = sleep_time
         self.is_running: bool = False
 
-    async def get_page(self, session: ClientSession, date: dt.date) -> str:
-        url = await self.parser.get_url(date)
-        async with session.get(url=url, ssl=False) as r:
-            return await r.text()
-
-    async def _worker(self):
-        async with ClientSession() as session:
-            date = await self.parser.get_date()
-            while date <= dt.date.today():
-                try:
-                    page = await self.get_page(session, date=date)
-                    objs = await self.parser.parsing(page, date=date)
-                    await self.parser.save(objs)
-                except (ValueError, AttributeError, ClientError) as error:
-                    logging.error(repr(error))
-                date += dt.timedelta(days=1)
-                await asyncio.sleep(1)
-
     async def _looper(self):
         while self.is_running:
-            await self._worker()
+            await self.parser.worker()
             logging.info(f'{self.__class__.__name__} worker sleep')
             await asyncio.sleep(self.sleep_time)
 
@@ -73,9 +52,15 @@ async def main():
     db = PostgresDB(DATABASE_URL)
     rushydro_parser = RushydroParser(db)
     kras_parser = KrasParser(db)
+    gismeteo_parser = GismeteoParser(db)
     rh_crawler = Crawler(rushydro_parser, SLEEP_TIME)
     kras_crawler = Crawler(kras_parser, SLEEP_TIME)
-    await asyncio.gather(rh_crawler.start(), kras_crawler.start())
+    gismeteo_crawler = Crawler(gismeteo_parser, 10800)
+    await asyncio.gather(
+        rh_crawler.start(),
+        kras_crawler.start(),
+        gismeteo_crawler.start(),
+    )
 
 
 if __name__ == '__main__':
