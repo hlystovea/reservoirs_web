@@ -106,6 +106,7 @@ class WaterSituation(models.Model):
         to_field='id',
         verbose_name='Водохранилище',
         on_delete=models.CASCADE,
+        related_name='situations',
     )
 
     class Meta:
