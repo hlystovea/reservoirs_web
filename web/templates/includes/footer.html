@@ -1,3 +1,8 @@
-<footer class="pt-4 my-md-5 pt-md-5 border-top">
-    <p class="m-0 text-dark text-center "><a href="https://t.me/hlystovea">@hlystovea</a> {% now "Y" %}</p>
-</footer>
+<ul class="list-inline pl-0 mb-3 mt-3">
+  <li class="list-inline-item ml-3"><a class="link-dark" href="{% url 'index' %}" class="link-dark">На главную</a></li>
+  <li class="list-inline-item ml-3"><a class="link-dark" target="_blank" rel="noreferrer nofollow" href="https://github.com/hlystovea/reservoirs_bot">GitHub</a></li>
+  <li class="list-inline-item ml-3"><a class="link-dark" target="_blank" rel="noreferrer nofollow" href="https://t.me/reservoirs_bot">Telegram</a></li>
+  <li class="list-inline-item ml-3"><a class="link-dark" href="{% url 'updates:update-list' %}" class="link-dark">Новости</a></li>
+  <li class="list-inline-item ml-3"><a class="link-dark" href="{% url 'about' %}">О проекте</a></li>
+</ul>
+<small class='text-dark'>Сделано с любовью к миру.</small>
