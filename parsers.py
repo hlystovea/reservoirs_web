@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import datetime as dt
 import re
@@ -6,12 +7,13 @@ from logging.handlers import RotatingFileHandler
 from os import environ
 from typing import Dict, List
 
+from aiohttp import ClientError, ClientSession
 from bs4 import BeautifulSoup
 from bs4.element import ResultSet
-from pydantic import ValidationError
+from pydantic import parse_obj_as, ValidationError
 
 from db.postgres import PostgresDB
-from db.schemas import WaterSituation
+from db.schemas import GeoObject, WaterSituation, Gismeteo
 
 
 rotate_file_handler = RotatingFileHandler('logs/parsing.log', 5000000, 2)
@@ -25,9 +27,7 @@ logging.basicConfig(
 
 class AbstractParser(metaclass=ABCMeta):
     db: PostgresDB
-    slug: str
     base_url: str
-    first_date: dt.date
 
     @abstractmethod
     def get_date(self) -> dt.date:
@@ -38,20 +38,24 @@ class AbstractParser(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def preprocessing(self) -> Dict:
+    def get_page(self) -> str:
         pass
 
     @abstractmethod
     def parsing(self):
         pass
 
+    @abstractmethod
+    def worker(self):
+        pass
 
-class RushydroParser(AbstractParser):
-    slug: str = 'sayano'
+    @abstractmethod
+    def save(self):
+        pass
+
+
+class WaterSituationMixin(AbstractParser):
     first_date: dt.date = dt.date(2013, 4, 13)
-    base_url: str = environ.get(
-        'RUSHYDRO_URL', 'http://www.rushydro.ru/hydrology/informer'
-    )
 
     def __init__(self, db):
         self.db = db
@@ -60,10 +64,44 @@ class RushydroParser(AbstractParser):
         date = await self.db.get_last_date()
         return date or self.first_date
 
-    async def get_url(self, **kwargs) -> str:
-        if 'date' in kwargs:
-            return f'{self.base_url}/?date={kwargs["date"].isoformat()}'
-        return self.base_url
+    async def get_page(self, session: ClientSession, date: dt.date) -> str:
+        url = await self.get_url(date)
+        async with session.get(url=url, ssl=False) as r:
+            return await r.text()
+
+    async def worker(self):
+        async with ClientSession() as session:
+            date = await self.get_date()
+            while date <= dt.date.today():
+                try:
+                    page = await self.get_page(session, date=date)
+                    objs = await self.parsing(page, date=date)
+                    await self.save(objs)
+                except (ValueError, AttributeError, ClientError) as error:
+                    logging.error(repr(error))
+                date += dt.timedelta(days=1)
+                await asyncio.sleep(1)
+
+    async def save(self, objs: List[WaterSituation]):
+        count = 0
+        for obj in objs:
+            if not await self.db.check_existence(obj):
+                try:
+                    await self.db.insert_one(obj)
+                    count += 1
+                except Exception as error:
+                    logging.error(repr(error))
+                    continue
+        logging.info(f'{self.__class__.__name__} saved {count} new records')
+
+
+class RushydroParser(WaterSituationMixin):
+    base_url: str = environ.get(
+        'RUSHYDRO_URL', 'http://www.rushydro.ru/hydrology/informer'
+    )
+
+    async def get_url(self, date: dt.date) -> str:
+        return f'{self.base_url}/?date={date.isoformat()}'
 
     async def preprocessing(self, values: ResultSet) -> Dict:
         keys = ['level', 'free_capacity', 'inflow', 'outflow', 'spillway']
@@ -77,10 +115,9 @@ class RushydroParser(AbstractParser):
         date_str = soup.find('input', id='popupDatepicker').get('value')
         date = dt.datetime.strptime(date_str, '%d.%m.%Y').date()
         logging.info(f'{self.__class__.__name__} parsed date - {date}')
-        result = []
 
-        reservoirs = await self.db.get_all_reservoirs()
-        for reservoir in reservoirs:
+        result = []
+        for reservoir in await self.db.get_all_reservoirs():
             informer_data = soup.find(
                 'div',
                 class_=f'informer-block {reservoir.slug}',
@@ -101,7 +138,7 @@ class RushydroParser(AbstractParser):
         return result
 
 
-class KrasParser(AbstractParser):
+class KrasParser(WaterSituationMixin):
     slug: str = 'kras'
     first_date: dt.date = dt.date(2021, 7, 1)
     base_url: str = environ.get('KRAS_URL', 'http://enbvu.ru/i03_deyatelnost')
@@ -121,16 +158,7 @@ class KrasParser(AbstractParser):
         12: 'dec',
     }
 
-    def __init__(self, db):
-        self.db = db
-
-    async def get_date(self):
-        date = await self.db.get_last_date()
-        return date or self.first_date
-
-    async def get_url(self, **kwargs) -> str:
-        date: dt.date = kwargs['date']
-
+    async def get_url(self, date: dt.date) -> str:
         num_year = date.year - self.first_date.year
         num_month = date.month - self.first_date.month
         page_number = num_year * 12 + num_month + 1
@@ -144,15 +172,14 @@ class KrasParser(AbstractParser):
         values = [float(v.replace(",", ".")) for v in values]
         return dict(zip(keys, values))
 
-    async def parsing(self, page: str, **kwargs) -> List[WaterSituation]:
+    async def parsing(self, page: str, date: dt.date) -> List[WaterSituation]:
         logging.info(f'{self.__class__.__name__} start parsing')
-        date: dt.date = kwargs['date']
+
         soup = BeautifulSoup(page, 'html.parser')
         iul_class = soup.find_all('div', class_='iul_day_1')
-
         reservoir = await self.db.get_reservoir_by_slug(self.slug)
-        result = []
 
+        result = []
         for block in iul_class:
             if not block.find('div', class_='date'):
                 continue
@@ -187,3 +214,65 @@ class KrasParser(AbstractParser):
                 result.append(instance)
         logging.info(f'{self.__class__.__name__} stop parsing')
         return result
+
+
+class GismeteoParser(AbstractParser):
+    base_url: str = environ.get(
+        'GIS_URL', 'https://api.gismeteo.net/v2/weather/forecast'
+    )
+
+    def __init__(self, db):
+        self.db = db
+
+    async def get_date(self) -> dt.date:
+        return dt.date.today()
+
+    async def get_url(self, geo_object: GeoObject) -> str:
+        return f'{self.base_url}/{geo_object.gismeteo_id}'
+
+    async def get_page(
+        self, session: ClientSession, geo_object: GeoObject
+    ) -> Dict:
+        url = await self.get_url(geo_object)
+        async with session.get(url=url, params={'days': 3}) as r:
+            return await r.json()
+
+    async def parsing(self, page: Dict) -> List[Gismeteo]:
+        logging.info(f'{self.__class__.__name__} start parsing')
+        instances = parse_obj_as(List[Gismeteo], page['response'])
+        logging.info(f'{self.__class__.__name__} stop parsing')
+        return instances
+
+    async def worker(self):
+        headers = {
+            'X-Gismeteo-Token': environ['GIS_TOKEN'],
+            'Accept-Encoding': 'gzip',
+        }
+        async with ClientSession(headers=headers) as session:
+            geo_objects = await self.db.get_all_geo_objects()
+            for geo_object in geo_objects:
+                try:
+                    page = await self.get_page(session, geo_object)
+                    if page['meta']['code'] != '200':
+                        logging.error(page['meta']['message'])
+                        continue
+                    instances = await self.parsing(page)
+                    await self.save(instances, geo_object)
+                except (
+                    ValueError, AttributeError, ClientError, ValidationError
+                ) as error:
+                    logging.error(repr(error))
+            await asyncio.sleep(1)
+
+    async def save(self, instances: List[Gismeteo], geo_object: GeoObject):
+        count = 0
+        for instance in instances:
+            instance.geo_object_id = geo_object.id
+            if not await self.db.check_existence_weather(instance):
+                try:
+                    await self.db.insert_one_geo(instance)
+                    count += 1
+                except Exception as error:
+                    logging.error(repr(error))
+                    continue
+        logging.info(f'{self.__class__.__name__} saved {count} new records')

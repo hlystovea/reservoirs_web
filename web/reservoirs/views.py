@@ -1,3 +1,5 @@
+from django.db.models import F, Window
+from django.db.models.functions import Lag
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -6,7 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from reservoirs.models import Reservoir, WaterSituation
-from reservoirs.serializers import (ReservoirSerializer,
+from reservoirs.serializers import (ActualWaterSituationSerializer,
+                                    ReservoirSerializer,
                                     WaterSituationSerializer)
 from reservoirs.utils import get_earlist_date, date_parse
 
@@ -43,4 +46,33 @@ class WaterSituationsView(APIView):
         objs = WaterSituation.objects.raw(raw_query=raw_query, params=params)
 
         serializer = WaterSituationSerializer(objs, many=True)
+        return Response(serializer.data)
+
+
+class ActualWaterSituationsView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        reservoir_slug = request.query_params.get('reservoir', 'sayano')
+        reservoir = get_object_or_404(Reservoir, slug=reservoir_slug)
+
+        situation = reservoir.situations.annotate(
+            level_offset=F('level') - Window(
+                expression=Lag('level'),
+                order_by=F('date').asc(),
+            ),
+            inflow_offset=F('inflow') - Window(
+                expression=Lag('inflow'),
+                order_by=F('date').asc(),
+            ),
+            outflow_offset=F('outflow') - Window(
+                expression=Lag('outflow'),
+                order_by=F('date').asc(),
+            ),
+            spillway_offset=F('spillway') - Window(
+                expression=Lag('spillway'),
+                order_by=F('date').asc(),
+            )
+        ).last()
+        serializer = ActualWaterSituationSerializer(situation)
         return Response(serializer.data)
