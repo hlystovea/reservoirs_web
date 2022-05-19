@@ -1,14 +1,20 @@
 import datetime as dt
 import io
+import logging
 from typing import List, Tuple
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
+from peewee_async import Manager
 
 from bot.exceptions import NoDataError
-from db.postgres import db
-from db.schemas import Reservoir
+from db.models import database, ReservoirModel, SituationModel
+
+
+objects = Manager(database)
+objects.database.allow_sync = logging.ERROR
+
 
 ylabel = {
     'level': 'Высота над уровнем моря, м',
@@ -68,13 +74,17 @@ def save_csv(reservoir, timeperiod):
 
 
 async def plot_graph(
-    reservoir: Reservoir, command: str, period: Tuple[dt.date]
+    reservoir: ReservoirModel, command: str, period: Tuple[dt.date]
 ):
     """
     This function return a photo with a graph
     """
-    water_situations = await db.get_water_situations_by_date(
-        reservoir, min(period), max(period)
+    water_situations = await objects.execute(SituationModel.select(
+        ).where(
+            SituationModel.reservoir==reservoir
+        ).where(
+            SituationModel.date.between(min(period), max(period))
+        )
     )
     if len(water_situations) == 0:
         raise NoDataError('Нет данных за указанный период.')

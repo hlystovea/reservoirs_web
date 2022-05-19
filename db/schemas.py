@@ -17,9 +17,11 @@ class Reservoir(BaseModel):
     area: Optional[float]
     max_depth: Optional[float]
 
+    class Config:
+        orm_mode = True
 
-class WaterSituation(BaseModel):
-    id: Optional[int]
+
+class Situation(BaseModel):
     date: date
     reservoir_id: int
     level: float
@@ -27,6 +29,9 @@ class WaterSituation(BaseModel):
     inflow: Optional[float]
     outflow: Optional[float]
     spillway: Optional[float]
+
+    class Config:
+        orm_mode = True
 
     @root_validator(pre=True)
     def check_fields(cls, values):  # noqa (N805)
@@ -41,6 +46,9 @@ class Region(BaseModel):
     name: str
     slug: str
 
+    class Config:
+        orm_mode = True
+
 
 class GeoObject(BaseModel):
     id: Optional[int]
@@ -51,9 +59,11 @@ class GeoObject(BaseModel):
     latitude: Optional[float]
     longitude: Optional[float]
 
+    class Config:
+        orm_mode = True
+
 
 class Weather(BaseModel):
-    id: Optional[int]
     date: datetime
     geo_object_id: Optional[int]
     temp: float
@@ -64,6 +74,9 @@ class Weather(BaseModel):
     wind_direction: int
     precipitation: float
     is_observable: bool
+
+    class Config:
+        orm_mode = True
 
 
 class Gismeteo(Weather):

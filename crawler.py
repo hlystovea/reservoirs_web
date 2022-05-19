@@ -3,11 +3,11 @@ import logging
 from logging.handlers import RotatingFileHandler
 from os import environ
 
-from db.postgres import PostgresDB
+from peewee_async import Manager
+
+from db.models import database
 from parsers import AbstractParser, GismeteoParser, KrasParser, RushydroParser
 
-
-DATABASE_URL = environ.get('DATABASE_URL')
 SLEEP_TIME = int(environ.get('SLEEP_TIME', 3600))
 
 
@@ -37,7 +37,6 @@ class Crawler:
             await asyncio.sleep(self.sleep_time)
 
     async def start(self):
-        await self.parser.db.setup()
         self.is_running = True
         logging.info(f'{self.__class__.__name__} start worker')
         await self._looper()
@@ -45,17 +44,20 @@ class Crawler:
     async def stop(self):
         logging.info(f'{self.__class__.__name__} stop worker')
         self.is_running = False
-        await self.parser.db.stop()
 
 
 async def main():
-    db = PostgresDB(DATABASE_URL)
-    rushydro_parser = RushydroParser(db)
-    kras_parser = KrasParser(db)
-    gismeteo_parser = GismeteoParser(db)
+    objects = Manager(database)
+    objects.database.allow_sync = logging.ERROR
+
+    rushydro_parser = RushydroParser(objects)
+    kras_parser = KrasParser(objects)
+    gismeteo_parser = GismeteoParser(objects)
+
     rh_crawler = Crawler(rushydro_parser, SLEEP_TIME)
     kras_crawler = Crawler(kras_parser, SLEEP_TIME)
     gismeteo_crawler = Crawler(gismeteo_parser, 10800)
+
     await asyncio.gather(
         rh_crawler.start(),
         kras_crawler.start(),

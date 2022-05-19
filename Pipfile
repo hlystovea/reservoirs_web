@@ -7,7 +7,6 @@ name = "pypi"
 aiohttp = "*"
 pydantic = "*"
 bs4 = "*"
-asyncpg = "*"
 yoyo-migrations = "*"
 psycopg2 = "*"
 aiogram = "*"
@@ -19,6 +18,9 @@ djangorestframework = "*"
 django-filter = "*"
 gunicorn = "*"
 sorl-thumbnail = "*"
+peewee = "*"
+peewee-async = "*"
+aiopg = "*"
 
 [dev-packages]
 

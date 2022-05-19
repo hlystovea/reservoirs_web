@@ -1,19 +1,21 @@
 import asyncio
-import logging
 import datetime as dt
+import logging
 import re
 from abc import ABCMeta, abstractmethod
 from logging.handlers import RotatingFileHandler
 from os import environ
 from typing import Dict, List
 
-from aiohttp import ClientError, ClientSession
+from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from bs4.element import ResultSet
+from peewee import fn, SQL
+from peewee_async import Manager
 from pydantic import parse_obj_as, ValidationError
 
-from db.postgres import PostgresDB
-from db.schemas import GeoObject, WaterSituation, Gismeteo
+from db.models import ReservoirModel, WeatherModel, SituationModel, GeoObjectModel
+from db.schemas import Situation, Gismeteo
 
 
 rotate_file_handler = RotatingFileHandler('logs/parsing.log', 5000000, 2)
@@ -26,7 +28,7 @@ logging.basicConfig(
 
 
 class AbstractParser(metaclass=ABCMeta):
-    db: PostgresDB
+    objects: Manager
     base_url: str
 
     @abstractmethod
@@ -54,14 +56,22 @@ class AbstractParser(metaclass=ABCMeta):
         pass
 
 
-class WaterSituationMixin(AbstractParser):
+class SituationMixin(AbstractParser):
     first_date: dt.date = dt.date(2013, 4, 13)
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, objects):
+        self.objects = objects
 
     async def get_date(self):
-        date = await self.db.get_last_date()
+        date = await self.objects.scalar(
+            SituationModel.select(
+                fn.Max(SituationModel.date).alias('last_date')
+            ).group_by(
+                SituationModel.reservoir
+            ).order_by(
+                SQL('last_date')
+            )
+        )
         return date or self.first_date
 
     async def get_page(self, session: ClientSession, date: dt.date) -> str:
@@ -75,27 +85,27 @@ class WaterSituationMixin(AbstractParser):
             while date <= dt.date.today():
                 try:
                     page = await self.get_page(session, date=date)
-                    objs = await self.parsing(page, date=date)
-                    await self.save(objs)
-                except (ValueError, AttributeError, ClientError) as error:
+                    instances = await self.parsing(page, date=date)
+                    await self.save(instances)
+                except (ValueError, AttributeError) as error:
                     logging.error(repr(error))
                 date += dt.timedelta(days=1)
                 await asyncio.sleep(1)
 
-    async def save(self, objs: List[WaterSituation]):
-        count = 0
-        for obj in objs:
-            if not await self.db.check_existence(obj):
-                try:
-                    await self.db.insert_one(obj)
-                    count += 1
-                except Exception as error:
-                    logging.error(repr(error))
-                    continue
-        logging.info(f'{self.__class__.__name__} saved {count} new records')
+    async def save(self, instances: List[Situation]):
+        saved_count = 0
+        for instance in instances:
+            _, created = await self.objects.get_or_create(
+                SituationModel,
+                date=instance.date,
+                reservoir_id=instance.reservoir_id,
+                defaults=instance.dict(),
+            )
+            saved_count += created
+        logging.info(f'{self.__class__.__name__} saved {saved_count} new records')
 
 
-class RushydroParser(WaterSituationMixin):
+class RushydroParser(SituationMixin):
     base_url: str = environ.get(
         'RUSHYDRO_URL', 'http://www.rushydro.ru/hydrology/informer'
     )
@@ -108,7 +118,7 @@ class RushydroParser(WaterSituationMixin):
         values = [v.text.split()[0].split('м')[0] for v in values]
         return dict(zip(keys, values))
 
-    async def parsing(self, page: str, **kwargs) -> List[WaterSituation]:
+    async def parsing(self, page: str, **kwargs) -> List[Situation]:
         logging.info(f'{self.__class__.__name__} start parsing')
 
         soup = BeautifulSoup(page, 'html.parser')
@@ -117,7 +127,7 @@ class RushydroParser(WaterSituationMixin):
         logging.info(f'{self.__class__.__name__} parsed date - {date}')
 
         result = []
-        for reservoir in await self.db.get_all_reservoirs():
+        for reservoir in await self.objects.execute(ReservoirModel.select()):
             informer_data = soup.find(
                 'div',
                 class_=f'informer-block {reservoir.slug}',
@@ -129,7 +139,7 @@ class RushydroParser(WaterSituationMixin):
             normalized_values['date'] = date
             normalized_values['reservoir_id'] = reservoir.id
             try:
-                instance = WaterSituation.parse_obj(normalized_values)
+                instance = Situation.parse_obj(normalized_values)
             except ValidationError as error:
                 logging.error(f'{reservoir.slug}: {repr(error)}')
             else:
@@ -138,7 +148,7 @@ class RushydroParser(WaterSituationMixin):
         return result
 
 
-class KrasParser(WaterSituationMixin):
+class KrasParser(SituationMixin):
     slug: str = 'kras'
     first_date: dt.date = dt.date(2021, 7, 1)
     base_url: str = environ.get('KRAS_URL', 'http://enbvu.ru/i03_deyatelnost')
@@ -167,17 +177,17 @@ class KrasParser(WaterSituationMixin):
             page_number, self.month_names[date.month]
         )
 
-    async def preprocessing(self, values: ResultSet) -> Dict:
+    async def preprocessing(self, values: List[ResultSet]) -> Dict:
         keys = ['level', 'inflow', 'outflow', 'spillway']
         values = [float(v.replace(",", ".")) for v in values]
         return dict(zip(keys, values))
 
-    async def parsing(self, page: str, date: dt.date) -> List[WaterSituation]:
+    async def parsing(self, page: str, date: dt.date) -> List[Situation]:
         logging.info(f'{self.__class__.__name__} start parsing')
 
         soup = BeautifulSoup(page, 'html.parser')
         iul_class = soup.find_all('div', class_='iul_day_1')
-        reservoir = await self.db.get_reservoir_by_slug(self.slug)
+        reservoir = await self.objects.get(ReservoirModel, slug=self.slug)
 
         result = []
         for block in iul_class:
@@ -207,7 +217,7 @@ class KrasParser(WaterSituationMixin):
             normalized_values['date'] = parsed_date
             normalized_values['reservoir_id'] = reservoir.id
             try:
-                instance = WaterSituation.parse_obj(normalized_values)
+                instance = Situation.parse_obj(normalized_values)
             except ValidationError as error:
                 logging.error(f'{reservoir.slug}: {repr(error)}')
             else:
@@ -221,17 +231,17 @@ class GismeteoParser(AbstractParser):
         'GIS_URL', 'https://api.gismeteo.net/v2/weather/forecast'
     )
 
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, objects):
+        self.objects = objects
 
     async def get_date(self) -> dt.date:
         return dt.date.today()
 
-    async def get_url(self, geo_object: GeoObject) -> str:
+    async def get_url(self, geo_object: GeoObjectModel) -> str:
         return f'{self.base_url}/{geo_object.gismeteo_id}'
 
     async def get_page(
-        self, session: ClientSession, geo_object: GeoObject
+        self, session: ClientSession, geo_object: GeoObjectModel
     ) -> Dict:
         url = await self.get_url(geo_object)
         async with session.get(url=url, params={'days': 3}) as r:
@@ -249,7 +259,9 @@ class GismeteoParser(AbstractParser):
             'Accept-Encoding': 'gzip',
         }
         async with ClientSession(headers=headers) as session:
-            geo_objects = await self.db.get_all_geo_objects()
+            geo_objects = await self.objects.execute(
+                GeoObjectModel.select().where(GeoObjectModel.gismeteo_id != None)
+            )
             for geo_object in geo_objects:
                 try:
                     page = await self.get_page(session, geo_object)
@@ -258,21 +270,27 @@ class GismeteoParser(AbstractParser):
                         continue
                     instances = await self.parsing(page)
                     await self.save(instances, geo_object)
-                except (
-                    ValueError, AttributeError, ClientError, ValidationError
-                ) as error:
+                except (ValueError, AttributeError, ValidationError) as error:
                     logging.error(repr(error))
             await asyncio.sleep(1)
 
-    async def save(self, instances: List[Gismeteo], geo_object: GeoObject):
-        count = 0
+    async def save(self, instances: List[Gismeteo], geo_object: GeoObjectModel):
+        saved_count = 0
         for instance in instances:
             instance.geo_object_id = geo_object.id
-            if not await self.db.check_existence_weather(instance):
-                try:
-                    await self.db.insert_one_geo(instance)
-                    count += 1
-                except Exception as error:
-                    logging.error(repr(error))
-                    continue
-        logging.info(f'{self.__class__.__name__} saved {count} new records')
+            obj, created = await self.objects.get_or_create(
+                WeatherModel,
+                date=instance.date,
+                geo_object_id=geo_object.id,
+                defaults=instance.dict(),
+            )
+            if not created:
+                await self.objects.execute(
+                    WeatherModel.update(
+                        is_observable=instance.is_observable
+                    ).where(
+                        WeatherModel.id==obj.id
+                    )
+                )
+            saved_count += created
+        logging.info(f'{self.__class__.__name__} saved {saved_count} new records')

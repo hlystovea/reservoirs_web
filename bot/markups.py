@@ -3,7 +3,7 @@ from typing import Dict, List, Union
 from aiogram import types
 from aiogram.utils.callback_data import CallbackData
 
-from db.schemas import Region, Reservoir
+from db.models import RegionModel, ReservoirModel
 
 
 time_buttons = {
@@ -20,13 +20,15 @@ command_buttons = {
     'inflow': 'Построить график притока',
     'outflow': 'Построить график сброса',
     'spillway': 'Построить график холостых сбросов',
-    'info': 'Характеристики водохранилища',
+    'info': 'Морфометрия водохранилища',
 }
 
 main_cb = CallbackData('main', 'action', 'answer')
 
 
-def get_markup_with_objs(action: str, objs: List[Union[Reservoir, Region]]):
+def get_markup_with_objs(
+    action: str, objs: List[Union[ReservoirModel, RegionModel]]
+):
     markup = types.InlineKeyboardMarkup()
     for obj in objs:
         button = types.InlineKeyboardButton(
