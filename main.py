@@ -9,10 +9,8 @@ from aiogram.types import BotCommand
 
 from bot.handlers.common import register_common_handlers
 from bot.handlers.water_situation import register_water_situation_handlers
-from db.postgres import db
 
 BOT_TOKEN = environ.get('BOT_BWU')
-DATABASE_URL = environ.get('DATABASE_URL')
 
 
 logging.basicConfig(
@@ -35,8 +33,6 @@ async def main():
         BotCommand(command='/menu', description='открыть меню')
     ]
     await bot.set_my_commands(commands)
-
-    await db.setup()
 
     register_common_handlers(dp)
     register_water_situation_handlers(dp)

@@ -113,9 +113,12 @@ class WaterSituation(models.Model):
         db_table = 'water_situation'
         verbose_name = 'Гидрологическая обстановка'
         verbose_name_plural = 'Гидрологическая обстановка'
-        unique_together = (
-            ('date', 'reservoir_id'),
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=['date', 'reservoir_id'],
+                name='water_situation_date_reservoir_id_key',
+            )
+        ]
 
     def __str__(self):
         return f'{self.reservoir.name}: {self.date}'

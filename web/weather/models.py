@@ -132,9 +132,12 @@ class Weather(models.Model):
     class Meta:
         verbose_name = 'Погода'
         verbose_name_plural = 'Погода'
-        unique_together = (
-            ('date', 'geo_object'),
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=['date', 'geo_object'],
+                name='weather_weather_date_geo_object_id',
+            )
+        ]
 
     def __str__(self):
         return f'{self.geo_object.name}: {self.date}'

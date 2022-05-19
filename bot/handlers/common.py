@@ -4,12 +4,17 @@ from typing import Dict
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from peewee_async import Manager
 
 from bot.exceptions import NoDataError
 from bot.markups import (command_buttons, get_markup_with_items,
                          get_markup_with_objs, main_cb, time_buttons)
 from bot.utils import reservoir_info
-from db.postgres import db
+from db.models import database, RegionModel, ReservoirModel, SituationModel
+
+
+objects = Manager(database)
+objects.database.allow_sync = logging.ERROR
 
 
 class MainState(StatesGroup):
@@ -75,7 +80,7 @@ async def menu(message: types.Message, state: FSMContext):
     This handler will be called when user sends text "Показать меню"
     """
     await state.finish()
-    regions = await db.get_all_regions()
+    regions = await objects.execute(RegionModel.select())
     markup = get_markup_with_objs(action='region', objs=regions)
     await message.answer(
         text='Выберите регион:',
@@ -97,7 +102,7 @@ async def back(
     query with "start" action
     """
     await state.finish()
-    regions = await db.get_all_regions()
+    regions = await objects.execute(RegionModel.select())
     markup = get_markup_with_objs(action='region', objs=regions)
     await query.message.edit_text(
         text='Выберите регион:', reply_markup=markup
@@ -116,7 +121,13 @@ async def regions_handler(
     query with "region" action
     """
     await state.update_data(region=callback_data['answer'])
-    reservoirs = await db.get_reservoirs_by_region(callback_data['answer'])
+    reservoirs = await objects.execute(ReservoirModel.select(
+        ).join(
+            RegionModel, on=(ReservoirModel.region==RegionModel.id)
+        ).where(
+            ReservoirModel.region.slug==callback_data['answer']
+        )
+    )
     markup = get_markup_with_objs(action='reservoir', objs=reservoirs)
     back_button = types.InlineKeyboardButton(
         'Назад', callback_data=main_cb.new(action='start', answer='_')
@@ -189,7 +200,7 @@ async def info_command_handler(
     data = await state.get_data()
 
     try:
-        reservoir = await db.get_reservoir_by_slug(data['reservoir'])
+        reservoir = await objects.get(ReservoirModel, slug=data['reservoir'])
         await query.message.edit_text(
             reservoir_info(reservoir), parse_mode='Markdown'
         )
