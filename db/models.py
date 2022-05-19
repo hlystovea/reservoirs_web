@@ -1,18 +1,19 @@
-import asyncio
-import logging
 from os import environ
 
 import peewee
 from peewee_async import PooledPostgresqlDatabase
 
 
-DATABASE_URL = environ.get('DATABASE_URL')
+POSTGRES_HOST = environ.get('POSTGRES_HOST')
+POSTGRES_DB = environ.get('POSTGRES_DB')
+POSTGRES_USER = environ.get('POSTGRES_USER')
+POSTGRES_PASSWORD = environ.get('POSTGRES_PASSWORD')
 
 database = PooledPostgresqlDatabase(
-    'reservoirs',
-    user='postgres',
-    password='pass123',
-    host='localhost',
+    POSTGRES_DB,
+    user=POSTGRES_USER,
+    password=POSTGRES_PASSWORD,
+    host=POSTGRES_HOST,
     max_connections=20
 )
 
@@ -102,4 +103,3 @@ class WeatherModel(BaseModel):
         indexes = (
             (('date', 'geo_object'), True),
         )
-
