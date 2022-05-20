@@ -275,13 +275,22 @@ class GismeteoParser(AbstractParser):
             await asyncio.sleep(1)
 
     async def save(self, instances: List[Gismeteo], geo_object: GeoObjectModel):
+        saved_count = 0
         for instance in instances:
             instance.geo_object_id = geo_object.id
-            await self.objects.execute(
-                WeatherModel.update(
-                    instance.dict()
-                ).where(
-                    WeatherModel.date==instance.date | WeatherModel.geo_object==instance.geo_object_id
-                )
+            obj, created = await self.objects.get_or_create(
+                WeatherModel,
+                date=instance.date,
+                geo_object_id=geo_object.id,
+                defaults=instance.dict(),
             )
-        logging.info(f'{self.__class__.__name__} updated {len(instances)} records')
+            if not created:
+                await self.objects.execute(
+                    WeatherModel.update(
+                        instance.dict()
+                    ).where(
+                        WeatherModel.id==obj.id
+                    )
+                )
+            saved_count += created
+        logging.info(f'{self.__class__.__name__} saved {saved_count} new records')
