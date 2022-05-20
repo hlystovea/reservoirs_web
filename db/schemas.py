@@ -85,9 +85,9 @@ class Gismeteo(Weather):
         kwargs['pressure'] = kwargs['pressure']['mm_hg_atm']
         kwargs['humidity'] = kwargs['humidity']['percent']
         kwargs['cloudiness'] = kwargs['cloudiness']['percent']
-        kwargs['wind_speed'] = kwargs['wind']['direction']['scale_8']
-        kwargs['wind_direction'] = kwargs['wind']['speed']['m_s']
-        kwargs['precipitation'] = kwargs['precipitation']['amount']
+        kwargs['wind_speed'] = kwargs['wind']['speed']['m_s']
+        kwargs['wind_direction'] = kwargs['wind']['direction']['scale_8']
+        kwargs['precipitation'] = kwargs['precipitation']['amount'] or 0
         kwargs['is_observable'] = True if kwargs['kind'] == 'Obs' else False
         kwargs['date'] = datetime.strptime(
             kwargs['date']['UTC'], '%Y-%m-%d %H:%M:%S'
