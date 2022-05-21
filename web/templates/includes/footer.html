@@ -1,5 +1,5 @@
-<ul class="list-inline pl-0 mb-3 mt-3">
-  <li class="list-inline-item ml-3"><a class="link-dark" href="{% url 'index' %}" class="link-dark">На главную</a></li>
+<ul class="list-inline pl-0 mb-3 mt-2">
+  {% if not index %}<li class="list-inline-item ml-3"><a class="link-dark" href="{% url 'index' %}" class="link-dark">На главную</a></li>{% endif %}
   <li class="list-inline-item ml-3"><a class="link-dark" target="_blank" rel="noreferrer nofollow" href="https://github.com/hlystovea/reservoirs_bot">GitHub</a></li>
   <li class="list-inline-item ml-3"><a class="link-dark" target="_blank" rel="noreferrer nofollow" href="https://t.me/reservoirs_bot">Telegram</a></li>
   <li class="list-inline-item ml-3"><a class="link-dark" href="{% url 'updates:update-list' %}" class="link-dark">Новости</a></li>
