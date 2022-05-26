@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
+from random import randint
 from os import environ
 
 from peewee_async import Manager
@@ -54,8 +55,8 @@ async def main():
     kras_parser = KrasParser(objects)
     gismeteo_parser = GismeteoParser(objects)
 
-    rh_crawler = Crawler(rushydro_parser, SLEEP_TIME)
-    kras_crawler = Crawler(kras_parser, SLEEP_TIME)
+    rh_crawler = Crawler(rushydro_parser, SLEEP_TIME + randint(5, 10))
+    kras_crawler = Crawler(kras_parser, SLEEP_TIME + randint(5, 10))
     gismeteo_crawler = Crawler(gismeteo_parser, 10800)
 
     await asyncio.gather(
