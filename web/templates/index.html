@@ -42,19 +42,19 @@
       <p class="lead mb-3 mt-4">Выбрать данные:</p>
       <div class="row g-3 pl-4 pr-4">
         <div class="col-sm-6">
-          <label for="dateFrom" class="form-label">Начало</label>
+          <label for="dateFrom" class="form-label text-muted">Начало</label>
           <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value={{ default_date }} min={{ earlist_date }} max="{% now 'Y-m-d' %}">
         </div>
         <div class="col-sm-6">
-          <label for="dateTo" class="form-label">Конец</label>
+          <label for="dateTo" class="form-label text-muted">Конец</label>
           <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min={{ earlist_date }} max="{% now 'Y-m-d' %}">
         </div>
         <div class="col-sm-12">
-          <label for="selectReservoirs" class="form-label">Водохранилище</label>
+          <label for="selectReservoirs" class="form-label text-muted">Водохранилище</label>
           <select id="selectReservoirs" class="form-select p-1" name ="selectReservoirs"></select>
         </div>
         <div class="col-sm-12 mt-4 mb-4">
-          <button id="updateButton" type="button" class="btn btn-dark btn-block pb-1 pt-1">Показать</button>
+          <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
         </div>
       </div>
     </div>
@@ -231,13 +231,13 @@
     function setInfo(reservoir) {
       $("#infoTableBody tr").remove();
 
-      if (reservoir.force_level !== null) {$("#infoTableBody").append("<tr><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>")};
-      if (reservoir.normal_level !== null) {$("#infoTableBody").append("<tr><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>")};
-      if (reservoir.dead_level !== null) {$("#infoTableBody").append("<tr><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>")};
-      if (reservoir.full_volume !== null) {$("#infoTableBody").append("<tr><td>Полный объём</td><td>" + reservoir.full_volume + " км\u00B3</td></tr>")};
-      if (reservoir.useful_volume !== null) {$("#infoTableBody").append("<tr><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>")};
-      if (reservoir.area !== null) {$("#infoTableBody").append("<tr><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>")};
-      if (reservoir.max_depth !== null) {$("#infoTableBody").append("<tr><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>")};
+      if (reservoir.force_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>")};
+      if (reservoir.normal_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>")};
+      if (reservoir.dead_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>")};
+      if (reservoir.full_volume !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Полный объём</td><td>" + reservoir.full_volume + " км\u00B3</td></tr>")};
+      if (reservoir.useful_volume !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>")};
+      if (reservoir.area !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>")};
+      if (reservoir.max_depth !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>")};
     };
     // set a statistics card
     function setStat(reservoir, data) {
