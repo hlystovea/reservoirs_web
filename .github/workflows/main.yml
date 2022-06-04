@@ -42,7 +42,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           source: "*,!.git,!.github,!.venv,!.env"
-          target: "~/reservoirs_bot"
+          target: "~/reservoirs_web"
           overwrite: true
 
   deploy:
