@@ -4,13 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-aiohttp = "*"
-pydantic = "*"
-bs4 = "*"
-yoyo-migrations = "*"
 psycopg2 = "*"
-aiogram = "*"
-matplotlib = "*"
 python-dateutil = "*"
 django = "*"
 django-environ = "*"
@@ -18,9 +12,6 @@ djangorestframework = "*"
 django-filter = "*"
 gunicorn = "*"
 sorl-thumbnail = "*"
-peewee = "*"
-peewee-async = "*"
-aiopg = "*"
 
 [dev-packages]
 
