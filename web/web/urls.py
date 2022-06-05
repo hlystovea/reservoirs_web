@@ -3,7 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from core.views import AboutPageView, IndexPageView
+from core.views import IndexPageView
 
 
 urlpatterns = [
