@@ -13,20 +13,6 @@ class MixinAdmin(admin.ModelAdmin):
     }
 
 
-class WaterSituationYearFilter(admin.SimpleListFilter):
-    title = 'год'
-    parameter_name = 'year'
-
-    def lookups(self, request, model_admin):
-        dates = WaterSituation.objects.dates('date', 'year')
-        return [(d.year, d.year) for d in dates]
-
-    def queryset(self, request, queryset):
-        if self.value():
-            return queryset.filter(date__year=self.value())
-        return queryset
-
-
 @admin.register(Reservoir)
 class ReservoirAdmin(MixinAdmin):
     list_display = ('id', 'name', 'force_level', 'normal_level', 'dead_level',
@@ -40,7 +26,8 @@ class ReservoirAdmin(MixinAdmin):
 class WaterSituationAdmin(MixinAdmin):
     list_display = ('id', 'reservoir_name', 'date', 'level', 'free_capacity',
                     'inflow', 'outflow', 'spillway')
-    list_filter = ('reservoir__name', WaterSituationYearFilter)
+    list_filter = ('reservoir__name', )
+    date_hierarchy = 'date'
 
     @admin.display(description='Наименование вдхр.')
     def reservoir_name(self, obj):
