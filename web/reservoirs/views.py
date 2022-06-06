@@ -15,7 +15,7 @@ from reservoirs.utils import get_earlist_date, date_parse
 
 
 class ReservoirsViewSet(ReadOnlyModelViewSet):
-    queryset = Reservoir.objects.order_by('id')
+    queryset = Reservoir.objects.order_by('region', 'id')
     serializer_class = ReservoirSerializer
 
 
@@ -73,6 +73,6 @@ class ActualWaterSituationsView(APIView):
                 expression=Lag('spillway'),
                 order_by=F('date').asc(),
             )
-        ).last()
+        ).latest('date')
         serializer = ActualWaterSituationSerializer(situation)
         return Response(serializer.data)
