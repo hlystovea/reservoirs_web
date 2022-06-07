@@ -12,12 +12,3 @@ class IndexPageView(TemplateView):
         context['default_date'] = get_date_before()
         context['earlist_date'] = get_earlist_date()
         return context
-
-
-class AboutPageView(TemplateView):
-    template_name = 'about.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['about'] = True
-        return context
