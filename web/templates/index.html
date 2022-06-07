@@ -139,14 +139,14 @@
       getStat(reservoir);
       setInfo(reservoir);
     };
-    // get reservoir by slug
+    // gets reservoir by slug
     function getReservoir(slug) {
       if (slug == null) {
         return reservoirs[0]
       }
       return reservoirs.find(r => r.slug == slug)
     };
-    // get water situation data
+    // gets water situation data
     function getSituations(reservoir, start, end) {
       let url = "{% url 'reservoirs:situation-list' %}?reservoir=" + reservoir.slug
       if (start !== null) {
@@ -168,7 +168,7 @@
         }
       });
     };
-    // get actual statistics
+    // gets actual statistics
     function getStat(reservoir) {
       let url = "{% url 'reservoirs:situation-actual' %}?reservoir=" + reservoir.slug
       $.ajax({
@@ -185,22 +185,7 @@
         }
       });
     };
-    // set cookie
-    function setCookie(name, value) {
-      document.cookie = name + "=" + (value || "") + "; path=/";
-    }
-    // get cookie
-    function getCookie(name) {
-      name += "=";
-      const cookiesDecoded = decodeURIComponent(document.cookie);
-      const cookiesArr = cookiesDecoded.split('; ');
-      let value;
-      cookiesArr.forEach(cookie => {
-          if (cookie.indexOf(name) === 0) value = cookie.substring(name.length);
-      })
-      return value;
-    }
-    // format water situation data
+    // formatting water situation data
     function formatData(data) {
       let dates = []
       let levels = []
@@ -227,7 +212,7 @@
         avg_inflows: avg_inflows
       }
     };
-    // set a info card
+    // sets the info card
     function setInfo(reservoir) {
       $("#infoTableBody tr").remove();
 
@@ -239,7 +224,7 @@
       if (reservoir.area !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>")};
       if (reservoir.max_depth !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>")};
     };
-    // set a statistics card
+    // sets the statistics card
     function setStat(reservoir, data) {
       const actualDate = (new Date(data.date)).toLocaleDateString('ru', {
         year: 'numeric',
@@ -247,10 +232,15 @@
         day: 'numeric'
       });
 
+      let inflowOffset = '-'
+      let outflowOffset  = '-'
+      let spillwayOffset  = '-'
       let levelOffset = data.level_offset.toFixed(2);
-      let inflowOffset = data.inflow_offset.toFixed(0);
-      let outflowOffset = data.outflow_offset.toFixed(0);
-      let spillwayOffset = data.spillway_offset.toFixed(0);
+
+      if (data.inflow_offset !== null) inflowOffset = data.inflow_offset;
+      if (data.outflow_offset !== null) outflowOffset = data.outflow_offset;
+      if (data.spillway_offset !== null) spillwayOffset = data.spillway_offset;
+
       if (levelOffset > 0) levelOffset = "+" + levelOffset;
       if (inflowOffset > 0) inflowOffset = "+" + inflowOffset;
       if (outflowOffset > 0) outflowOffset = "+" + outflowOffset;
@@ -263,9 +253,9 @@
       $("#statTableActual td").remove();
       $("#statTableActual").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Актуальные значения</td>");
       $("#statTableActual").append("<td><h5><span style='color:#ffc58c'>" + data.level + " м</td>");
-      $("#statTableActual").append("<td><h5><span style='color:#ffa1b5'>" + data.inflow.toFixed(0) + " м\u00B3/с</td>");
-      $("#statTableActual").append("<td><h5><span style='color:#86c7f3'>" + data.outflow.toFixed(0) + " м\u00B3/с</td>");
-      $("#statTableActual").append("<td><h5><span style='color:#b894ff'>" + data.spillway.toFixed(0) + " м\u00B3/с</td>");
+      $("#statTableActual").append("<td><h5><span style='color:#ffa1b5'>" + data.inflow + " м\u00B3/с</td>");
+      $("#statTableActual").append("<td><h5><span style='color:#86c7f3'>" + data.outflow + " м\u00B3/с</td>");
+      $("#statTableActual").append("<td><h5><span style='color:#b894ff'>" + data.spillway + " м\u00B3/с</td>");
 
       $("#statTableOffsets td").remove();
       $("#statTableOffsets").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Изменения за сутки</td>");
@@ -274,7 +264,7 @@
       $("#statTableOffsets").append("<td><small class='text-muted'>" + outflowOffset + " м\u00B3/с</td>");
       $("#statTableOffsets").append("<td><small class='text-muted'>" + spillwayOffset + " м\u00B3/с</td>");
     };
-    // set a volumes row
+    // sets a volumes row
     function setVolumes(reservoir, data) {
       let inflowVolume = 0
       let outflowVolume = 0
