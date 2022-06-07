@@ -81,22 +81,22 @@ class WaterSituation(models.Model):
     level = models.FloatField(
         verbose_name='УВБ',
     )
-    free_capacity = models.FloatField(
+    free_capacity = models.IntegerField(
         verbose_name='Свободный объем',
         blank=True,
         null=True,
     )
-    inflow = models.FloatField(
+    inflow = models.IntegerField(
         verbose_name='Приток',
         blank=True,
         null=True,
     )
-    outflow = models.FloatField(
+    outflow = models.IntegerField(
         verbose_name='Средний сброс',
         blank=True,
         null=True,
         )
-    spillway = models.FloatField(
+    spillway = models.IntegerField(
         verbose_name='Холостой сброс',
         blank=True,
         null=True,
