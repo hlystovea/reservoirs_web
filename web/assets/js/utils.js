@@ -14,3 +14,7 @@ function getCookie(name) {
   })
   return value;
 }
+
+function getWord() {
+  return 'Word';
+}
