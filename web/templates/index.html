@@ -131,7 +131,7 @@
 
     function updateContent() {
       let slug  = $("#selectReservoirs").find("option:selected").attr('val');
-      let reservoir = getReservoir(slug);
+      let reservoir = getReservoir(reservoirs, slug);
       let start = $("#dateFrom").val();
       let end = $("#dateTo").val();
 
@@ -140,7 +140,7 @@
       setInfo(reservoir);
     };
     // gets reservoir by slug
-    function getReservoir(slug) {
+    function getReservoir(reservoirs, slug) {
       if (slug == null) {
         return reservoirs[0]
       }
@@ -279,7 +279,7 @@
     $("#statTableVolumes td").remove();
 
     $("#statTableVolumes").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
-    $("#statTableVolumes").append("<td><small class='text-muted'>-</td>");
+    $("#statTableVolumes").append("<td></td>");
     $("#statTableVolumes").append("<td><small class='text-muted'>" + inflowVolume.toFixed(2) + " км\u00B3</td>");
     $("#statTableVolumes").append("<td><small class='text-muted'>" + outflowVolume.toFixed(2) + " км\u00B3</td>");
     $("#statTableVolumes").append("<td><small class='text-muted'>" + spillwayVolume.toFixed(2) + " км\u00B3</td>");
