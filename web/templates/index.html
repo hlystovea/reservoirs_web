@@ -3,7 +3,7 @@
 <div class="row justify-content-xl-center mt-3">
   <div class="row px-4">
     <div class="card shadow-sm">
-      <div class="card-body py-1">
+      <div class="card-body pt-1 pb-2">
         <div class="row">
           <div class="col-lg-3" id="statTitle">
           </div>
@@ -73,7 +73,6 @@
 {% block jquery %}
   <script>
     var reservoirs = [];
-
     // requesting a list of reservoirs
     $.ajax({
       url: "{% url 'reservoirs:v1:reservoir-list' %}",
@@ -92,18 +91,21 @@
         console.log(error_data)
       }
     });
+
     // updating content by change the select
     $(document).ready(function() {
       $("#selectReservoirs").change(function() {
         updateContent();
       });
     });
+
     // updating content by click the button
     $(document).ready(function() {
       $("#updateButton").click(function() {
         updateContent();
       });
     });
+
     // updating content by press Enter in dateFrom form
     $(document).ready(function() {
       $("#dateFrom").bind("keydown", function(event) {
@@ -116,6 +118,7 @@
         }
       });
     });
+
     // updating content by press Enter in dateTo form
     $(document).ready(function() {
       $("#dateTo").bind("keydown", function(event) {
@@ -131,36 +134,28 @@
 
     function updateContent() {
       let slug  = $("#selectReservoirs").find("option:selected").attr('val');
-      let reservoir = getReservoir(reservoirs, slug);
+      let reservoir = getObjectBySlug(reservoirs, slug);
       let start = $("#dateFrom").val();
       let end = $("#dateTo").val();
 
-      getSituations(reservoir, start, end);
-      getStat(reservoir);
       setInfo(reservoir);
+      getStat(reservoir);
+      getSituations(reservoir, start, end);
     };
-    // gets reservoir by slug
-    function getReservoir(reservoirs, slug) {
-      if (slug == null) {
-        return reservoirs[0]
-      }
-      return reservoirs.find(r => r.slug == slug)
-    };
+
     // gets water situation data
     function getSituations(reservoir, start, end) {
-      let url = "{% url 'reservoirs:situation-list' %}?reservoir=" + reservoir.slug
-      if (start !== null) {
-        url = url + "&start=" + start
-      }
-      if (end !== null) {
-        url = url + "&end=" + end
-      }
+      let url = "{% url 'reservoirs:situation-list' %}?reservoir=" + reservoir.slug;
+      if (start !== null) url = url + "&start=" + start;
+      if (end !== null) url = url + "&end=" + end;
       $.ajax({
         method: "GET",
         url: url,
         success: function(data) {
-          setCharts(formatData(data));
-          setVolumes(reservoir, data);
+          data = formatToArray(data);
+          setLevelsChart(levelsChart, data);
+          setFlowsChart(flowsChart, data);
+          setVolumes(calcVolumes(data));
           setCookie("reservoir", reservoir.slug);
         },
         error: function(error_data) {
@@ -168,14 +163,15 @@
         }
       });
     };
+
     // gets actual statistics
     function getStat(reservoir) {
-      let url = "{% url 'reservoirs:situation-actual' %}?reservoir=" + reservoir.slug
+      let url = "{% url 'reservoirs:situation-actual' %}?reservoir=" + reservoir.slug;
       $.ajax({
         method: "GET",
         url: url,
         success: function(data) {
-          setStat(reservoir, data);
+        setStat(reservoir, data);
         },
         error: function(error_data) {
           console.log(error_data);
@@ -185,37 +181,10 @@
         }
       });
     };
-    // formatting water situation data
-    function formatData(data) {
-      let dates = []
-      let levels = []
-      let inflows = []
-      let outflows = []
-      let spillway = []
-      let avg_inflows = []
 
-      $.each(data,function() {
-        dates.push(this.date);
-        levels.push(this.level);
-        inflows.push(this.inflow);
-        outflows.push(this.outflow);
-        spillway.push(this.spillway);
-        avg_inflows.push(this.avg_inflow);
-      });
-
-      return {
-        dates: dates,
-        levels: levels,
-        inflows: inflows,
-        outflows: outflows,
-        spillway: spillway,
-        avg_inflows: avg_inflows
-      }
-    };
     // sets the info card
     function setInfo(reservoir) {
       $("#infoTableBody tr").remove();
-
       if (reservoir.force_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>")};
       if (reservoir.normal_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>")};
       if (reservoir.dead_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>")};
@@ -224,6 +193,7 @@
       if (reservoir.area !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>")};
       if (reservoir.max_depth !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>")};
     };
+
     // sets the statistics card
     function setStat(reservoir, data) {
       const actualDate = (new Date(data.date)).toLocaleDateString('ru', {
@@ -231,20 +201,6 @@
         month: 'long',
         day: 'numeric'
       });
-
-      let inflowOffset = '-'
-      let outflowOffset  = '-'
-      let spillwayOffset  = '-'
-      let levelOffset = data.level_offset.toFixed(2);
-
-      if (data.inflow_offset !== null) inflowOffset = data.inflow_offset;
-      if (data.outflow_offset !== null) outflowOffset = data.outflow_offset;
-      if (data.spillway_offset !== null) spillwayOffset = data.spillway_offset;
-
-      if (levelOffset > 0) levelOffset = "+" + levelOffset;
-      if (inflowOffset > 0) inflowOffset = "+" + inflowOffset;
-      if (outflowOffset > 0) outflowOffset = "+" + outflowOffset;
-      if (spillwayOffset > 0) spillwayOffset = "+" + spillwayOffset;
 
       $("#statTitle p").remove();
       $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
@@ -259,127 +215,28 @@
 
       $("#statTableOffsets td").remove();
       $("#statTableOffsets").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Изменения за сутки</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + levelOffset + " м</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + inflowOffset + " м\u00B3/с</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + outflowOffset + " м\u00B3/с</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + spillwayOffset + " м\u00B3/с</td>");
+      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.level_offset + " м</td>");
+      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.inflow_offset + " м\u00B3/с</td>");
+      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.outflow_offset + " м\u00B3/с</td>");
+      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.spillway_offset + " м\u00B3/с</td>");
     };
+
     // sets a volumes row
-    function setVolumes(reservoir, data) {
-      let inflowVolume = 0
-      let outflowVolume = 0
-      let spillwayVolume = 0
-
-      $.each(data, function() {
-        inflowVolume += this.inflow * 864 / 10000000;
-        outflowVolume += this.outflow * 864 / 10000000;
-        spillwayVolume += this.spillway * 864 / 10000000;
-      });
-
-    $("#statTableVolumes td").remove();
-
-    $("#statTableVolumes").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
-    $("#statTableVolumes").append("<td></td>");
-    $("#statTableVolumes").append("<td><small class='text-muted'>" + inflowVolume.toFixed(2) + " км\u00B3</td>");
-    $("#statTableVolumes").append("<td><small class='text-muted'>" + outflowVolume.toFixed(2) + " км\u00B3</td>");
-    $("#statTableVolumes").append("<td><small class='text-muted'>" + spillwayVolume.toFixed(2) + " км\u00B3</td>");
+    function setVolumes(volumes) {
+      console.log(volumes)
+      $("#statTableVolumes td").remove();
+      $("#statTableVolumes").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
+      $("#statTableVolumes").append("<td></td>");
+      $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.inflow + " км\u00B3</td>");
+      $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.outflow + " км\u00B3</td>");
+      $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.spillway + " км\u00B3</td>");
     };
 
-    function setCharts(data) {
-      levelsChart.data.labels = data.dates;
-      levelsChart.data.datasets[0].data = data.levels;
-      levelsChart.update();
+    const flowsCtx = document.getElementById("flowsChart").getContext("2d");
+    const levelsCtx = document.getElementById("levelsChart").getContext("2d");
 
-      flowsChart.data.labels = data.dates;
-      flowsChart.data.datasets[0].data = data.inflows;
-      flowsChart.data.datasets[1].data = data.outflows;
-      flowsChart.data.datasets[2].data = data.spillway;
-      flowsChart.data.datasets[3].data = data.avg_inflows;
-      flowsChart.update();
-    };
-
-    const flows_ctx = document.getElementById("flowsChart").getContext("2d");
-    const levels_ctx = document.getElementById("levelsChart").getContext("2d");
-
-    options = {
-      scales: {
-        y: {
-            beginAtZero: false
-        }
-      },
-      elements: {
-        point: {
-          radius: 0
-        }
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: "bottom",
-          labels: {
-              boxHeight: 0
-          }
-        }
-      }
-    };
-    var levels_data = {
-      labels: [],
-      datasets: [{
-        label: "УВБ, м",
-        data: [],
-        backgroundColor: "rgba(255, 159, 64, 0.2)",
-        borderColor: "rgba(255, 159, 64, 1)",
-        borderWidth: 1,
-        fill: true,
-      }]
-    };
-    var levels_config = {
-      type: "line",
-      data: levels_data,
-      options: options
-    };
-    var flows_data = {
-      labels: [],
-      datasets: [{
-        label: "Приток, м\u00B3/с",
-        data: [],
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
-        borderColor: "rgba(255, 99, 132, 1)",
-        borderWidth: 1,
-        fill: true,
-      },
-      {
-        label: "Сброс, м\u00B3/с",
-        data: [],
-        backgroundColor: "rgba(54, 162, 235, 0.2)",
-        borderColor: "rgba(54, 162, 235, 1)",
-        borderWidth: 1,
-        fill: true,
-      },
-      {
-        label: "Холостой сброс, м\u00B3/с",
-        data: [],
-        backgroundColor: "rgba(153, 102, 255, 0.2)",
-        borderColor: "rgba(153, 102, 255, 1)",
-        borderWidth: 1,
-        fill: true,
-      },
-      {
-        label: "Приток сред. многолетний, м\u00B3/с",
-        data: [],
-        backgroundColor: "rgba(201, 203, 207, 0.2)",
-        borderColor: "rgba(201, 203, 207, 1)",
-        borderWidth: 1,
-        fill: true,
-      }]
-    };
-    var flows_config = {
-      type: "line",
-      data: flows_data,
-      options: options
-    };
-    const levelsChart = new Chart(levels_ctx, levels_config);
-    const flowsChart = new Chart(flows_ctx, flows_config);
+    const levelsChart = new Chart(levelsCtx, levelsConfig);
+    const flowsChart = new Chart(flowsCtx, flowsConfig);
   </script>
 {% endblock %}
 {% endblock %}
