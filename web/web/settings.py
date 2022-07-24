@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'reservoirs.apps.ReservoirsConfig',
     'common.apps.CommonConfig',
     'weather.apps.WeatherConfig',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -81,7 +82,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
     ],
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.UserRateThrottle',
