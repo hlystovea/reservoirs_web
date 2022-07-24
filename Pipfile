@@ -11,7 +11,7 @@ django-environ = "*"
 djangorestframework = "*"
 django-filter = "*"
 gunicorn = "*"
-sorl-thumbnail = "*"
+drf-yasg = "*"
 
 [dev-packages]
 

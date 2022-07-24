@@ -75,7 +75,7 @@
     var reservoirs = [];
     // requesting a list of reservoirs
     $.ajax({
-      url: "{% url 'reservoirs:v1:reservoir-list' %}",
+      url: "{% url 'reservoirs:reservoir-list' %}",
       success: function(data) {
         reservoirs = data;
         $("#selectReservoirs option").remove();

@@ -1,14 +1,30 @@
-from email.policy import default
-from rest_framework.serializers import (FloatField, IntegerField,
+from rest_framework.reverse import reverse
+from rest_framework.serializers import (FloatField, HyperlinkedIdentityField,
                                         ModelSerializer, SerializerMethodField)
 
 from reservoirs.models import Reservoir, WaterSituation
+from common.serializers import RegionNestedSerializer
 
 
 class ReservoirSerializer(ModelSerializer):
+    url = HyperlinkedIdentityField(view_name='reservoirs:reservoir-detail')
+    region = RegionNestedSerializer()
+    water_situations = SerializerMethodField()
+    actual_situation = SerializerMethodField()
+
     class Meta:
         model = Reservoir
         fields = '__all__'
+
+    def get_water_situations(self, obj):
+        view_name = 'reservoirs:situation-list'
+        base_url = reverse(view_name, request=self.context['request'])
+        return f'{base_url}?reservoirs={obj.slug}'
+
+    def get_actual_situation(self, obj):
+        view_name = 'reservoirs:situation-actual'
+        base_url = reverse(view_name, request=self.context['request'])
+        return f'{base_url}?reservoirs={obj.slug}'
 
 
 class WaterSituationSerializer(ModelSerializer):

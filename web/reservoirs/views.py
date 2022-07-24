@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from reservoirs.filters import ReservoirFilter
 from reservoirs.models import Reservoir, WaterSituation
 from reservoirs.serializers import (ActualWaterSituationSerializer,
                                     ReservoirSerializer,
@@ -15,8 +16,10 @@ from reservoirs.utils import get_earlist_date, date_parse
 
 
 class ReservoirsViewSet(ReadOnlyModelViewSet):
-    queryset = Reservoir.objects.order_by('region', 'id')
+    queryset = Reservoir.objects.select_related('region') \
+                        .order_by('region', 'id')
     serializer_class = ReservoirSerializer
+    filterset_class = ReservoirFilter
 
 
 class WaterSituationsView(APIView):

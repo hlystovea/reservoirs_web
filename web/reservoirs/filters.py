@@ -1,6 +1,6 @@
 from django_filters import CharFilter, DateFilter, FilterSet
 
-from reservoirs.models import WaterSituation
+from reservoirs.models import Reservoir, WaterSituation
 
 
 class SituationFilter(FilterSet):
@@ -12,3 +12,11 @@ class SituationFilter(FilterSet):
     class Meta:
         model = WaterSituation
         fields = ['reservoir', 'start', 'end']
+
+
+class ReservoirFilter(FilterSet):
+    region = CharFilter(field_name='region__slug')
+
+    class Meta:
+        model = Reservoir
+        fields = ['region']

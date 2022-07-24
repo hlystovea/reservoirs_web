@@ -34,6 +34,7 @@ class Reservoir(models.Model):
         to_field='id',
         verbose_name='Регион',
         on_delete=models.SET_NULL,
+        related_name='reservoirs',
         blank=True,
         null=True,
     )
