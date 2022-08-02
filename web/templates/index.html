@@ -145,7 +145,7 @@
 
     // gets water situation data
     function getSituations(reservoir, start, end) {
-      let url = "{% url 'reservoirs:situation-list' %}?reservoir=" + reservoir.slug;
+      let url = reservoir.water_situations + "?";
       if (start !== null) url = url + "&start=" + start;
       if (end !== null) url = url + "&end=" + end;
       $.ajax({
@@ -166,10 +166,9 @@
 
     // gets actual statistics
     function getStat(reservoir) {
-      let url = "{% url 'reservoirs:situation-actual' %}?reservoir=" + reservoir.slug;
       $.ajax({
         method: "GET",
-        url: url,
+        url: reservoir.actual_situation,
         success: function(data) {
         setStat(reservoir, data);
         },
