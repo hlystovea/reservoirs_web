@@ -80,6 +80,75 @@ var flowsConfig = {
   options: chartOptions
 }
 
+var yearSummaryData = {
+  labels: [],
+  datasets: [{
+      label: "Максимальный УВБ, м",
+      data: [],
+      backgroundColor: "rgba(255, 159, 64, 0.2)",
+      borderColor: "rgba(255, 159, 64, 1)",
+      borderWidth: 1,
+      fill: true,
+      yAxisID: 'y1',
+      type: "line"
+    },
+    {
+    label: "Годовой объём притока, км\u00B3",
+    data: [],
+    backgroundColor: "rgba(255, 99, 132, 0.2)",
+    borderColor: "rgba(255, 99, 132, 1)",
+    borderWidth: 1,
+    fill: true,
+    yAxisID: 'y',
+  },
+  {
+    label: "Годовой объём холостых сбросов, км\u00B3",
+    data: [],
+    backgroundColor: "rgba(153, 102, 255, 0.2)",
+    borderColor: "rgba(153, 102, 255, 1)",
+    borderWidth: 1,
+    fill: true,
+    yAxisID: 'y',
+  }]
+}
+
+var yearSummaryConfig = {
+  type: "bar",
+  data: yearSummaryData,
+  options: {
+    scales: {
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        beginAtZero: false,
+        grid: {
+          drawOnChartArea: false,
+        }
+      }
+    },
+    elements: {
+      point: {
+        radius: 0
+      }
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: "bottom",
+        labels: {
+            boxHeight: 0
+        }
+      }
+    }
+  }
+}
+
 function setLevelsChart(chart, data) {
   chart.data.labels = data.dates;
   chart.data.datasets[0].data = data.levels;
@@ -92,5 +161,13 @@ function setFlowsChart(chart, data) {
   chart.data.datasets[1].data = data.outflows;
   chart.data.datasets[2].data = data.spillway;
   chart.data.datasets[3].data = data.avg_inflows;
+  chart.update();
+}
+
+function setYearSummaryChart(chart, data) {
+  chart.data.labels = data.years;
+  chart.data.datasets[0].data = data.max_levels;
+  chart.data.datasets[1].data = data.inflow_volumes;
+  chart.data.datasets[2].data = data.spillway_volumes;
   chart.update();
 }

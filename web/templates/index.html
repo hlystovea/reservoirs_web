@@ -66,6 +66,9 @@
         <div class="row p-0">
           <canvas id="flowsChart"></canvas>
         </div>
+        <div class="row p-0">
+          <canvas id="yearSummaryChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
@@ -141,18 +144,19 @@
       setInfo(reservoir);
       getStat(reservoir);
       getSituations(reservoir, start, end);
+      getYearSummary(reservoir);
     };
 
     // gets water situation data
     function getSituations(reservoir, start, end) {
-      let url = "{% url 'reservoirs:situation-list' %}?reservoir=" + reservoir.slug;
+      let url = reservoir.water_situations + "?";
       if (start !== null) url = url + "&start=" + start;
       if (end !== null) url = url + "&end=" + end;
       $.ajax({
         method: "GET",
         url: url,
         success: function(data) {
-          data = formatToArray(data);
+          data = formatSituationsToArray(data);
           setLevelsChart(levelsChart, data);
           setFlowsChart(flowsChart, data);
           setVolumes(calcVolumes(data));
@@ -164,12 +168,26 @@
       });
     };
 
-    // gets actual statistics
-    function getStat(reservoir) {
-      let url = "{% url 'reservoirs:situation-actual' %}?reservoir=" + reservoir.slug;
+    // gets water situation data
+    function getYearSummary(reservoir) {
       $.ajax({
         method: "GET",
-        url: url,
+        url: reservoir.year_summary,
+        success: function(data) {
+          data = formatYearSummaryToArray(data);
+          setYearSummaryChart(yearSummaryChart, data);
+        },
+        error: function(error_data) {
+          console.log(error_data);
+        }
+      });
+    };
+
+    // gets actual statistics
+    function getStat(reservoir) {
+      $.ajax({
+        method: "GET",
+        url: reservoir.actual_situation,
         success: function(data) {
         setStat(reservoir, data);
         },
@@ -233,9 +251,11 @@
 
     const flowsCtx = document.getElementById("flowsChart").getContext("2d");
     const levelsCtx = document.getElementById("levelsChart").getContext("2d");
+    const yearSummaryCtx = document.getElementById("yearSummaryChart").getContext("2d");
 
     const levelsChart = new Chart(levelsCtx, levelsConfig);
     const flowsChart = new Chart(flowsCtx, flowsConfig);
+    const yearSummaryChart = new Chart(yearSummaryCtx, yearSummaryConfig);
   </script>
 {% endblock %}
 {% endblock %}

@@ -12,8 +12,11 @@ djangorestframework = "*"
 django-filter = "*"
 gunicorn = "*"
 drf-yasg = "*"
+drf-nested-routers = "*"
 
 [dev-packages]
+django-extensions = "*"
+werkzeug = "*"
 
 [requires]
 python_version = "3.9"

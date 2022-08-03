@@ -24,7 +24,7 @@ function getObjectBySlug(objects, slug) {
 }
 
 // formatting water situation data
-function formatToArray(data) {
+function formatSituationsToArray(data) {
   let dates = [];
   let levels = [];
   let inflows = [];
@@ -48,6 +48,31 @@ function formatToArray(data) {
     outflows: outflows,
     spillway: spillway,
     avg_inflows: avg_inflows
+  };
+}
+
+// formatting year summary data
+function formatYearSummaryToArray(data) {
+  let years = [];
+  let max_levels = [];
+  let inflow_volumes = [];
+  let outflow_volumes = [];
+  let spillway_volumes = [];
+
+  for (var i in data) {
+    years.push(data[i].year);
+    max_levels.push(data[i].max_level);
+    inflow_volumes.push(data[i].inflow_volume);
+    outflow_volumes.push(data[i].outflow_volume);
+    spillway_volumes.push(data[i].spillway_volume);
+  };
+
+  return {
+    years: years,
+    max_levels: max_levels,
+    inflow_volumes: inflow_volumes,
+    outflow_volumes: outflow_volumes,
+    spillway_volumes: spillway_volumes
   };
 }
 

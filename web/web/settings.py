@@ -31,6 +31,9 @@ INSTALLED_APPS = [
     'drf_yasg',
 ]
 
+if DEBUG:
+    INSTALLED_APPS.append('django_extensions')
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
