@@ -20,20 +20,16 @@ class ReservoirSerializer(ModelSerializer):
         fields = '__all__'
 
     def get_water_situations(self, obj):
-        view_name = 'reservoirs:situation-list'
-        return reverse(view_name, args=(obj.id, ), request=self.context['request'])  # noqa (E501)
+        return reverse('reservoirs:situation-list', args=(obj.id, ))
 
     def get_actual_situation(self, obj):
-        view_name = 'reservoirs:situation-actual'
-        return reverse(view_name, args=(obj.id, ), request=self.context['request'])  # noqa (E501)
+        return reverse('reservoirs:situation-actual', args=(obj.id, ))
 
     def get_year_summary(self, obj):
-        view_name = 'reservoirs:statistics-year-summary'
-        return reverse(view_name, args=(obj.id, ), request=self.context['request'])  # noqa (E501)
+        return reverse('reservoirs:statistics-year-summary', args=(obj.id, ))
 
     def get_statistics_by_doy(self, obj):
-        view_name = 'reservoirs:statistics-day-of-year'
-        return reverse(view_name, args=(obj.id, ), request=self.context['request'])  # noqa (E501)
+        return reverse('reservoirs:statistics-day-of-year', args=(obj.id, ))
 
 
 class SituationSerializer(ModelSerializer):
