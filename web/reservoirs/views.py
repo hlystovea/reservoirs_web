@@ -3,7 +3,6 @@ from django.db.models.functions import Extract, ExtractYear, Lag, Round
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
 from rest_framework.decorators import action
-from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -132,6 +131,7 @@ class StatisticsViewSet(GenericViewSet):
         ).values(
             'year'
         ).annotate(
+            max_level=Max('level'),
             inflow_volume=Sum('inflow')*8.64e-5,
             outflow_volume=Sum('outflow')*8.64e-5,
             spillway_volume=Sum('spillway')*8.64e-5
