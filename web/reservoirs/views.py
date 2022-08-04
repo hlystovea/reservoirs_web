@@ -28,36 +28,6 @@ class ReservoirViewSet(ReadOnlyModelViewSet):
     )
 
 
-class WaterSituationView(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request):
-        slug = request.query_params.get('reservoir', 'sayano')
-        start = date_parse(request.query_params.get('start', get_earlist_date()))  # noqa(E501)
-        end = date_parse(request.query_params.get('end', now().date().isoformat()))  # noqa(E501)
-
-        reservoir = get_object_or_404(Reservoir, slug=slug)
-
-        raw_query = '''
-            WITH ws AS (
-            SELECT *, avg(inflow) OVER w AS avg_inflow
-            FROM water_situation
-            WHERE reservoir_id = %s
-            WINDOW w AS (PARTITION BY DATE_PART('doy', date))
-            )
-            SELECT *
-            FROM ws
-            WHERE date BETWEEN %s AND %s
-            ORDER BY date
-        '''
-        params = [reservoir.id, start, end]
-
-        objs = WaterSituation.objects.raw(raw_query=raw_query, params=params)
-
-        serializer = SituationSerializer(objs, many=True)
-        return Response(serializer.data)
-
-
 class SituationViewSet(GenericViewSet):
     queryset = WaterSituation.objects.order_by('date')
     serializer_class = SituationSerializer
@@ -75,7 +45,7 @@ class SituationViewSet(GenericViewSet):
 
         raw_query = '''
             WITH ws AS (
-            SELECT *, avg(inflow) OVER w AS avg_inflow
+            SELECT *, ROUND(AVG(inflow) OVER w) AS avg_inflow
             FROM water_situation
             WHERE reservoir_id = %s
             WINDOW w AS (PARTITION BY DATE_PART('doy', date))
@@ -131,7 +101,7 @@ class StatisticsViewSet(GenericViewSet):
         ).values(
             'year'
         ).annotate(
-            max_level=Max('level'),
+            max_inflow=Max('inflow'),
             inflow_volume=Sum('inflow')*8.64e-5,
             outflow_volume=Sum('outflow')*8.64e-5,
             spillway_volume=Sum('spillway')*8.64e-5

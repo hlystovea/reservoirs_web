@@ -33,7 +33,7 @@ class ReservoirSerializer(ModelSerializer):
 
 
 class SituationSerializer(ModelSerializer):
-    avg_inflow = FloatField(read_only=True)
+    avg_inflow = IntegerField(read_only=True)
 
     class Meta:
         model = WaterSituation
@@ -71,7 +71,7 @@ class ActualSituationSerializer(ModelSerializer):
 
 class YearSummarySerializer(Serializer):
     year = IntegerField(read_only=True)
-    max_level = FloatField(read_only=True)
+    max_inflow = IntegerField(read_only=True)
     inflow_volume = FloatField(read_only=True)
     outflow_volume = FloatField(read_only=True)
     spillway_volume = FloatField(read_only=True)
