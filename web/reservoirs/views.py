@@ -131,7 +131,7 @@ class StatisticsViewSet(GenericViewSet):
         ).values(
             'year'
         ).annotate(
-            max_level=Max('level'),
+            max_inflow=Max('inflow'),
             inflow_volume=Sum('inflow')*8.64e-5,
             outflow_volume=Sum('outflow')*8.64e-5,
             spillway_volume=Sum('spillway')*8.64e-5

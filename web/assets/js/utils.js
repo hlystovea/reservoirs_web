@@ -54,14 +54,14 @@ function formatSituationsToArray(data) {
 // formatting year summary data
 function formatYearSummaryToArray(data) {
   let years = [];
-  let max_levels = [];
+  let max_inflows = [];
   let inflow_volumes = [];
   let outflow_volumes = [];
   let spillway_volumes = [];
 
   for (var i in data) {
     years.push(data[i].year);
-    max_levels.push(data[i].max_level);
+    max_inflows.push(data[i].max_inflow);
     inflow_volumes.push(data[i].inflow_volume);
     outflow_volumes.push(data[i].outflow_volume);
     spillway_volumes.push(data[i].spillway_volume);
@@ -69,7 +69,7 @@ function formatYearSummaryToArray(data) {
 
   return {
     years: years,
-    max_levels: max_levels,
+    max_inflows: max_inflows,
     inflow_volumes: inflow_volumes,
     outflow_volumes: outflow_volumes,
     spillway_volumes: spillway_volumes

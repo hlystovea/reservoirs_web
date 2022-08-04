@@ -83,23 +83,22 @@ var flowsConfig = {
 var yearSummaryData = {
   labels: [],
   datasets: [{
-      label: "Максимальный УВБ, м",
-      data: [],
-      backgroundColor: "rgba(255, 159, 64, 0.2)",
-      borderColor: "rgba(255, 159, 64, 1)",
-      borderWidth: 1,
-      fill: true,
-      yAxisID: 'y1',
-      type: "line"
-    },
-    {
+    label: "Максимум притока, м\u00B3/с",
+    data: [],
+    backgroundColor: "rgba(54, 162, 235, 0.2)",
+    borderColor: "rgba(54, 162, 235, 1)",
+    borderWidth: 1.5,
+    yAxisID: 'y1',
+    type: "line"
+  },
+  {
     label: "Годовой объём притока, км\u00B3",
     data: [],
     backgroundColor: "rgba(255, 99, 132, 0.2)",
     borderColor: "rgba(255, 99, 132, 1)",
     borderWidth: 1,
     fill: true,
-    yAxisID: 'y',
+    yAxisID: 'y'
   },
   {
     label: "Годовой объём холостых сбросов, км\u00B3",
@@ -108,7 +107,7 @@ var yearSummaryData = {
     borderColor: "rgba(153, 102, 255, 1)",
     borderWidth: 1,
     fill: true,
-    yAxisID: 'y',
+    yAxisID: 'y'
   }]
 }
 
@@ -126,7 +125,6 @@ var yearSummaryConfig = {
         type: 'linear',
         display: true,
         position: 'right',
-        beginAtZero: false,
         grid: {
           drawOnChartArea: false,
         }
@@ -166,7 +164,7 @@ function setFlowsChart(chart, data) {
 
 function setYearSummaryChart(chart, data) {
   chart.data.labels = data.years;
-  chart.data.datasets[0].data = data.max_levels;
+  chart.data.datasets[0].data = data.max_inflows;
   chart.data.datasets[1].data = data.inflow_volumes;
   chart.data.datasets[2].data = data.spillway_volumes;
   chart.update();
