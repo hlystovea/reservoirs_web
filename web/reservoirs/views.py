@@ -1,11 +1,8 @@
 from django.db.models import Avg, F, Max, Sum, Window
 from django.db.models.functions import Extract, ExtractYear, Lag, Round
 from django.shortcuts import get_object_or_404
-from django.utils.timezone import now
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 
 from reservoirs.filters import ReservoirFilter, SituationFilter
@@ -14,7 +11,6 @@ from reservoirs.serializers import (ActualSituationSerializer,
                                     ReservoirSerializer, SituationSerializer,
                                     StatisticsByDaySerializer,
                                     YearSummarySerializer)
-from reservoirs.utils import date_parse, get_earlist_date
 
 
 class ReservoirViewSet(ReadOnlyModelViewSet):
@@ -38,12 +34,21 @@ class SituationViewSet(GenericViewSet):
         return queryset.filter(reservoir=self.kwargs['reservoir_pk'])
 
     def list(self, request, *args, **kwargs):
-        start = request.query_params.get('start', get_earlist_date())
-        end = request.query_params.get('end', now().date().isoformat())
-
         reservoir = get_object_or_404(Reservoir, pk=kwargs['reservoir_pk'])
+        params = [reservoir.id]
 
-        raw_query = '''
+        start = request.query_params.get('start')
+        end = request.query_params.get('end')
+
+        placeholders = []
+        if start:
+            placeholders.append('date >= %s')
+            params.append(start)
+        if end:
+            placeholders.append('date <= %s')
+            params.append(end)
+
+        query = '''
             WITH ws AS (
             SELECT *, ROUND(AVG(inflow) OVER w) AS avg_inflow
             FROM water_situation
@@ -52,12 +57,15 @@ class SituationViewSet(GenericViewSet):
             )
             SELECT *
             FROM ws
-            WHERE date BETWEEN %s AND %s
-            ORDER BY date
         '''
-        params = [reservoir.id, start, end]
 
-        objs = WaterSituation.objects.raw(raw_query=raw_query, params=params)
+        if start or end:
+            select_criteria = ' AND '.join(placeholders)
+            query += f' WHERE {select_criteria}'
+
+        query += ' ORDER BY date'
+
+        objs = WaterSituation.objects.raw(raw_query=query, params=params)
 
         serializer = SituationSerializer(objs, many=True)
         return Response(serializer.data)
