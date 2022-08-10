@@ -11,7 +11,7 @@ class CustomHyperlinkedIdentityField(HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
         url = super().get_url(obj, view_name, request, format)
 
-        if request.is_secure():
+        if url and request.is_secure():
             url.replace('http//', 'https//')
         return url
 
