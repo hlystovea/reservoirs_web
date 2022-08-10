@@ -7,8 +7,17 @@ from common.serializers import RegionNestedSerializer
 from reservoirs.models import Reservoir, WaterSituation
 
 
+class CustomHyperlinkedIdentityField(HyperlinkedIdentityField):
+    def get_url(self, obj, view_name, request, format):
+        url = super().get_url(obj, view_name, request, format)
+
+        if request.is_secure():
+            url.replace('http//', 'https//')
+        return url
+
+
 class ReservoirSerializer(ModelSerializer):
-    url = HyperlinkedIdentityField(view_name='reservoirs:reservoir-detail')
+    url = CustomHyperlinkedIdentityField('reservoirs:reservoir-detail')
     region = RegionNestedSerializer()
     water_situations = SerializerMethodField()
     actual_situation = SerializerMethodField()
@@ -20,16 +29,25 @@ class ReservoirSerializer(ModelSerializer):
         fields = '__all__'
 
     def get_water_situations(self, obj):
-        return reverse('reservoirs:situation-list', args=(obj.id, ))
+        return self.hyperlink_related(obj, 'reservoirs:situation-list')
 
     def get_actual_situation(self, obj):
-        return reverse('reservoirs:situation-actual', args=(obj.id, ))
+        return self.hyperlink_related(obj, 'reservoirs:situation-actual')
 
     def get_year_summary(self, obj):
-        return reverse('reservoirs:statistics-year-summary', args=(obj.id, ))
+        return self.hyperlink_related(obj, 'reservoirs:statistics-year-summary')  # noqa(E501)
 
     def get_statistics_by_doy(self, obj):
-        return reverse('reservoirs:statistics-day-of-year', args=(obj.id, ))
+        return self.hyperlink_related(obj, 'reservoirs:statistics-day-of-year')
+
+    def hyperlink_related(self, obj, viewname):
+        request = self.context['request']
+
+        url = reverse(viewname, args=(obj.id, ), request=request)
+
+        if request.is_secure():
+            url.replace('http//', 'https//')
+        return url
 
 
 class SituationSerializer(ModelSerializer):
