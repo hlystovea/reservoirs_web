@@ -7,17 +7,8 @@ from common.serializers import RegionNestedSerializer
 from reservoirs.models import Reservoir, WaterSituation
 
 
-class CustomHyperlinkedIdentityField(HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        url = super().get_url(obj, view_name, request, format)
-
-        if request.is_secure():
-            url.replace('http//', 'https//')
-        return url
-
-
 class ReservoirSerializer(ModelSerializer):
-    url = CustomHyperlinkedIdentityField('reservoirs:reservoir-detail')
+    url = HyperlinkedIdentityField(view_name='reservoirs:reservoir-detail')
     region = RegionNestedSerializer()
     water_situations = SerializerMethodField()
     actual_situation = SerializerMethodField()
