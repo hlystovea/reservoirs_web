@@ -20,25 +20,24 @@ class ReservoirSerializer(ModelSerializer):
         fields = '__all__'
 
     def get_water_situations(self, obj):
-        return self.hyperlink_related(obj, 'reservoirs:situation-list')
+        request = self.context['request']
+        viewname = 'reservoirs:situation-list'
+        return reverse(viewname, args=(obj.id, ), request=request)
 
     def get_actual_situation(self, obj):
-        return self.hyperlink_related(obj, 'reservoirs:situation-actual')
+        request = self.context['request']
+        viewname = 'reservoirs:situation-actual'
+        return reverse(viewname, args=(obj.id, ), request=request)
 
     def get_year_summary(self, obj):
-        return self.hyperlink_related(obj, 'reservoirs:statistics-year-summary')  # noqa(E501)
+        request = self.context['request']
+        viewname = 'reservoirs:statistics-year-summary'
+        return reverse(viewname, args=(obj.id, ), request=request)
 
     def get_statistics_by_doy(self, obj):
-        return self.hyperlink_related(obj, 'reservoirs:statistics-day-of-year')
-
-    def hyperlink_related(self, obj, viewname):
         request = self.context['request']
-
-        url = reverse(viewname, args=(obj.id, ), request=request)
-
-        if request.is_secure():
-            url.replace('http//', 'https//')
-        return url
+        viewname = 'reservoirs:statistics-day-of-year'
+        return reverse(viewname, args=(obj.id, ), request=request)
 
 
 class SituationSerializer(ModelSerializer):
