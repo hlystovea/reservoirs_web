@@ -6,13 +6,13 @@ name = "pypi"
 [packages]
 psycopg2 = "*"
 python-dateutil = "*"
-django = "*"
 django-environ = "*"
 djangorestframework = "*"
 django-filter = "*"
 gunicorn = "*"
 drf-yasg = "*"
 drf-nested-routers = "*"
+django = "==4.0.6"
 
 [dev-packages]
 django-extensions = "*"
