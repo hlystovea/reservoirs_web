@@ -15,6 +15,11 @@ function getCookie(name) {
   return value;
 }
 
+// disables the cookie alert
+function disableCookieAlert() {
+  setCookie("dont_show_cookie_alert", "true")
+};
+
 // gets object by slug
 function getObjectBySlug(objects, slug) {
   if (slug == null) {

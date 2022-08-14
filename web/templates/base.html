@@ -28,6 +28,8 @@
         {% include 'includes/footer.html' %}
       </div>
     </footer>
-    {% include 'includes/cookies_alert.html' %}
+    {% if not request.COOKIES.dont_show_cookie_alert %}
+      {% include 'includes/cookie_alert.html' %}
+    {% endif %}
   </body>
 </html>
