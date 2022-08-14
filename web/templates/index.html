@@ -95,6 +95,16 @@
       }
     });
 
+    // hides the cookie alert if it has been shown
+    $(document).ready(function() {
+      let cookie = getCookie("cookie_alert");
+      if (cookie !== undefined) {
+        $("#cookiesAlert").remove();
+      } else {
+        setCookie("cookie_alert", "shown");
+      }
+    });
+
     // updating content by change the select
     $(document).ready(function() {
       $("#selectReservoirs").change(function() {

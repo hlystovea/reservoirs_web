@@ -35,7 +35,7 @@ class SituationViewSet(GenericViewSet):
 
     def list(self, request, *args, **kwargs):
         reservoir = get_object_or_404(Reservoir, pk=kwargs['reservoir_pk'])
-        params = [reservoir.id]
+        params = [reservoir.pk]
 
         start = request.query_params.get('start')
         end = request.query_params.get('end')
