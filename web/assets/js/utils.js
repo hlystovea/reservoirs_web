@@ -1,6 +1,6 @@
 // sets cookie
 function setCookie(name, value) {
-  document.cookie = name + "=" + (value || "") + "; path=/; max-age=86400";
+  document.cookie = name + "=" + (value || "") + "; path=/; max-age=" + 100*24*60*60*1000;
 }
 
 // gets cookie
