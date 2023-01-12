@@ -70,6 +70,10 @@ DATABASES = {
     'default': env.db(),
 }
 
+CACHES = {
+    'default': env.cache_url('REDIS_URL')
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',  # noqa (E501)

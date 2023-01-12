@@ -1,6 +1,14 @@
 version: '3.5'
 
 services:
+  redis:
+    image: redis:latest
+    container_name: reservoirs_redis
+    restart: always
+    command: redis-server
+    volumes:
+      - redis_data:/data
+
   web:
     build: .
     container_name: reservoirs_web
@@ -9,8 +17,11 @@ services:
     volumes:
       - static_value:/reservoirs_web/static/
       - media_value:/reservoirs_web/media/
+    depends_on:
+      - redis
     env_file:
       - ./.env
+
   nginx:
     image: nginx:latest
     container_name: reservoirs_nginx
@@ -32,3 +43,4 @@ networks:
 volumes:
   static_value:
   media_value:
+  redis_data:

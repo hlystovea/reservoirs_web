@@ -5,6 +5,8 @@ services:
     image: postgres:14
     container_name: reservoirs_db
     restart: always
+    ports:
+      - '5432:5432'
     volumes:
       - postgres:/var/lib/postgresql/data/
     env_file:
