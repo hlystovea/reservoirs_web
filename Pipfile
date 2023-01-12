@@ -13,6 +13,7 @@ gunicorn = "*"
 drf-yasg = "*"
 drf-nested-routers = "*"
 django = "==4.0.6"
+django-redis = "*"
 
 [dev-packages]
 django-extensions = "*"

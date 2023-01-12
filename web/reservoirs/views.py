@@ -1,6 +1,8 @@
 from django.db.models import Avg, F, Max, Sum, Window
 from django.db.models.functions import Extract, ExtractYear, Lag, Round
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
@@ -33,6 +35,7 @@ class SituationViewSet(GenericViewSet):
         queryset = super().get_queryset()
         return queryset.filter(reservoir=self.kwargs['reservoir_pk'])
 
+    @method_decorator(cache_page(60*60))
     def list(self, request, *args, **kwargs):
         reservoir = get_object_or_404(Reservoir, pk=kwargs['reservoir_pk'])
         params = [reservoir.pk]
@@ -49,14 +52,13 @@ class SituationViewSet(GenericViewSet):
             params.append(end)
 
         query = '''
-            WITH ws AS (
+            SELECT *
+            FROM (
             SELECT *, ROUND(AVG(inflow) OVER w) AS avg_inflow
             FROM water_situation
             WHERE reservoir_id = %s
             WINDOW w AS (PARTITION BY DATE_PART('doy', date))
-            )
-            SELECT *
-            FROM ws
+            ) as ws
         '''
 
         if start or end:
