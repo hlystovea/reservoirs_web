@@ -4,13 +4,16 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
 from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 
-from reservoirs.filters import ReservoirFilter, SituationFilter
+from reservoirs.filters import ReservoirFilter
 from reservoirs.models import Reservoir, WaterSituation
 from reservoirs.serializers import (ActualSituationSerializer,
-                                    ReservoirSerializer, SituationSerializer,
+                                    ReservoirSerializer,
+                                    SituationSerializer,
                                     StatisticsByDaySerializer,
                                     YearSummarySerializer)
 
@@ -29,11 +32,25 @@ class ReservoirViewSet(ReadOnlyModelViewSet):
 class SituationViewSet(GenericViewSet):
     queryset = WaterSituation.objects.order_by('date')
     serializer_class = SituationSerializer
-    filterset_class = SituationFilter
 
     def get_queryset(self):
         queryset = super().get_queryset()
         return queryset.filter(reservoir=self.kwargs['reservoir_pk'])
+
+    def create(self, request, *args, **kwargs):
+        reservoir = get_object_or_404(Reservoir, pk=kwargs['reservoir_pk'])
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        queryset = WaterSituation.objects.filter(
+            reservoir=reservoir, date=serializer.validated_data['date'])
+
+        if queryset.exists():
+            raise ValidationError({'detail': 'The situation already exists'})
+
+        serializer.save(reservoir=reservoir)
+        return Response(serializer.data, status=HTTP_201_CREATED)
 
     @method_decorator(cache_page(60*60))
     def list(self, request, *args, **kwargs):
@@ -104,6 +121,11 @@ class StatisticsViewSet(GenericViewSet):
         queryset = super().get_queryset()
         return queryset.filter(reservoir=self.kwargs['reservoir_pk'])
 
+    def get_serializer_class(self):
+        if self.get_view_name() == 'Year summary':
+            return YearSummarySerializer
+        return StatisticsByDaySerializer
+
     @action(methods=['get'], url_name='year-summary', detail=False)
     def year_summary(self, request, *args, **kwargs):
         queryset = self.get_queryset().annotate(
@@ -119,7 +141,7 @@ class StatisticsViewSet(GenericViewSet):
             'year'
         )
 
-        serializer = YearSummarySerializer(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(methods=['get'], url_name='day-of-year', detail=False)
@@ -137,5 +159,5 @@ class StatisticsViewSet(GenericViewSet):
             'day_of_year'
         )
 
-        serializer = StatisticsByDaySerializer(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
