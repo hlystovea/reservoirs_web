@@ -4,13 +4,13 @@ from pathlib import Path
 import environ
 
 
-env = environ.Env(DEBUG=(bool, False))
+env = environ.Env()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = env('SECRET_KEY')
 
-DEBUG = env('DEBUG')
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -34,8 +34,6 @@ INSTALLED_APPS = [
     'drf_yasg',
 ]
 
-if DEBUG:
-    INSTALLED_APPS.append('django_extensions')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -67,12 +65,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'web.wsgi.application'
 
-DATABASES = {
-    'default': env.db(),
+CASHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'reservoirs-cashe',
+    },
 }
 
-CACHES = {
-    'default': env.cache_url('REDIS_URL')
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'reservoirs',
+        'USER': os.environ['POSTGRES_USER'],
+        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
 }
 
 AUTH_PASSWORD_VALIDATORS = [
