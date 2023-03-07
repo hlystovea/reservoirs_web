@@ -1,6 +1,15 @@
 version: '3.5'
 
 services:
+  db:
+    image: postgres:14
+    container_name: reservoirs_db
+    restart: always
+    volumes:
+      - postgres:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
   redis:
     image: redis:latest
     container_name: reservoirs_redis
@@ -18,7 +27,18 @@ services:
       - static_value:/reservoirs_web/static/
       - media_value:/reservoirs_web/media/
     depends_on:
+      - db
       - redis
+    env_file:
+      - ./.env
+
+  celery:
+    build: .
+    container_name: reservoirs_celery
+    restart: always
+    command: celery -A web worker -B -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - web
     env_file:
       - ./.env
 
@@ -41,6 +61,7 @@ networks:
     driver: bridge
 
 volumes:
+  postgres:
   static_value:
   media_value:
   redis_data:

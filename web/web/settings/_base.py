@@ -32,6 +32,9 @@ INSTALLED_APPS = [
     'common.apps.CommonConfig',
     'weather.apps.WeatherConfig',
     'drf_yasg',
+    'django_celery_results',
+    'django_celery_beat',
+    'tasks.apps.TasksConfig',
 ]
 
 
@@ -78,7 +81,7 @@ DATABASES = {
         'NAME': 'reservoirs',
         'USER': os.environ['POSTGRES_USER'],
         'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-        'HOST': 'localhost',
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
@@ -135,3 +138,11 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+
+CELERY_BROKER_URL = os.environ['REDIS_URL']
+CELERY_CACHE_BACKEND = 'default'
+CELERY_RESULT_BACKEND = os.environ['REDIS_URL']

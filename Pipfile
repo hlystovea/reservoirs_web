@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-psycopg2-binary = "*"
 python-dateutil = "*"
 django-environ = "*"
 djangorestframework = "*"
@@ -14,10 +13,18 @@ drf-yasg = "*"
 drf-nested-routers = "*"
 django = "==4.0.6"
 django-redis = "*"
+celery = "*"
+django-celery-results = "*"
+psycopg2-binary = "*"
+django-celery-beat = "*"
+httpx = "*"
+beautifulsoup4 = "*"
+pydantic = "*"
 
 [dev-packages]
 django-extensions = "*"
 werkzeug = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.9"
