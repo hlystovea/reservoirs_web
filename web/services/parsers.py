@@ -117,7 +117,7 @@ class KrasParser(AbstractParser):
 
             normalized_values = cls.preprocessing(cls.get_values(raw_data))
 
-            return Situation(**normalized_values)
+            return Situation(date=date, **normalized_values)
 
         except (ValueError, AttributeError, ValidationError) as error:
             logger.error(f'{cls.__name__} {repr(error)}')

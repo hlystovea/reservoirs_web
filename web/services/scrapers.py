@@ -76,10 +76,17 @@ class RushydroScraper(SituationMixin):
     @classmethod
     def get_date(cls):
         try:
-            return WaterSituation.objects.exclude(reservoir__slug='kras') \
-                                 .values('reservoir') \
-                                 .annotate(last_date=Max('date')) \
-                                 .earliest('last_date')['last_date']
+            last_date = WaterSituation.objects.exclude(
+                reservoir__slug='kras'
+            ).values(
+                'reservoir'
+            ).annotate(
+                last_date=Max('date')
+            ).earliest(
+                'last_date'
+            )['last_date']
+            return last_date + dt.timedelta(days=1)
+
         except WaterSituation.DoesNotExist:
             return cls.first_date
 
@@ -136,9 +143,10 @@ class KrasScraper(SituationMixin):
     @classmethod
     def get_date(cls):
         try:
-            latest_situation = WaterSituation.objects.filter(
+            last_situation = WaterSituation.objects.filter(
                 reservoir__slug=cls.slug).latest('date')
-            return latest_situation.date
+            return last_situation.date + dt.timedelta(days=1)
+
         except WaterSituation.DoesNotExist:
             return cls.first_date
 
