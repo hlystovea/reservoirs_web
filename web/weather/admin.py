@@ -24,8 +24,8 @@ class GeoObjectAdmin(MixinAdmin):
 class WeatherAdmin(MixinAdmin):
     list_display = ('id', 'date', 'object_name', 'temp', 'pressure',
                     'humidity', 'cloudiness', 'wind_speed',
-                    'wind_direction', 'precipitation', 'is_observable')
-    list_filter = ('geo_object__name', 'wind_direction', 'is_observable')
+                    'precipitation', 'is_observable')
+    list_filter = ('geo_object__name', 'is_observable')
     date_hierarchy = 'date'
 
     @admin.display(description='Название объекта')

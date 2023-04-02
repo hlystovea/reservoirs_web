@@ -101,26 +101,6 @@ class Weather(models.Model):
     wind_speed = models.FloatField(
         verbose_name='Скорость ветра',
     )
-    wind_direction = models.PositiveSmallIntegerField(
-        verbose_name='Направление ветра',
-        choices=[
-            (0, 'Нет ветра'),
-            (1, 'Северный'),
-            (2, 'Северо-восточный'),
-            (3, 'Восточный'),
-            (4, 'Юго-восточный'),
-            (5, 'Южный'),
-            (6, 'Юго-западный'),
-            (7, 'Западный'),
-            (8, 'Северо-западный'),
-        ],
-        validators=[
-            validators.MaxValueValidator(
-                8,
-                message='Направление ветра задается по шкале от 0 до 8',
-            ),
-        ],
-    )
     precipitation = models.FloatField(
         verbose_name='Осадки',
     )
