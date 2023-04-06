@@ -20,11 +20,13 @@ django-celery-beat = "*"
 httpx = "*"
 beautifulsoup4 = "*"
 pydantic = "*"
+selenium = "*"
 
 [dev-packages]
 django-extensions = "*"
 werkzeug = "*"
 flake8 = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.9"
