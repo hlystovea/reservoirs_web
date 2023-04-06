@@ -6,30 +6,14 @@ from typing import Iterable, Optional, Union
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 from celery.utils.log import get_task_logger
-from pydantic import BaseModel, root_validator, ValidationError
+from dateutil.parser import parse as parse_date
+from pydantic import parse_obj_as, ValidationError
 
 from reservoirs.models import Reservoir
+from services.schemes import Forecast, Situation
+from services.utils import parser_info
 
 logger = get_task_logger(__name__)
-
-
-class Situation(BaseModel):
-    date: Optional[dt.date]
-    level: float
-    free_capacity: Optional[int]
-    inflow: Optional[int]
-    outflow: Optional[int]
-    spillway: Optional[int]
-
-    class Config:
-        orm_mode = True
-
-    @root_validator(pre=True)
-    def check_fields(cls, values):
-        for key, value in values.items():
-            if isinstance(value, str) and 'нет' in value:
-                values[key] = None
-        return values
 
 
 class AbstractParser(metaclass=ABCMeta):
@@ -121,3 +105,68 @@ class KrasParser(AbstractParser):
 
         except (ValueError, AttributeError, ValidationError) as error:
             logger.error(f'{cls.__name__} {repr(error)}')
+
+
+class RP5Parser(AbstractParser):
+    @staticmethod
+    def get_headlines(first_row: Union[Tag, NavigableString]) -> list[str]:
+        return [cell.text for cell in first_row.find_all('td')]
+
+    @staticmethod
+    def get_values(row: Tag) -> list[Optional[str]]:
+        values = []
+
+        for cell in row.find_all('td'):
+            if cell.find('div'):
+                values.append(cell.find('div').text)
+            else:
+                values.append(cell.text)
+
+        return values
+
+    @classmethod
+    def preprocessing(cls, headlines: list, row: Tag) -> dict:
+        return dict(zip(headlines[::-1], cls.get_values(row)[::-1]))
+
+    @classmethod
+    def get_observations(cls, table: Union[Tag, NavigableString]) -> list[dict]:
+        date_str = table.find('td', **{'class_': 'cl_dt'})
+        date = parse_date(date_str.text, parserinfo=parser_info)
+
+        logger.info(f'{cls.__name__} parsed date {date.date()}')
+
+        headlines = cls.get_headlines(table.find('tr'))
+        observations = []
+        last_hour = 24
+
+        for row in table.find('tbody').contents[1:]:
+            hours = int(row.find('div', **{'class_': 'dfs'}).text)
+
+            if hours > last_hour:
+                break
+
+            observation = cls.preprocessing(headlines, row)
+            observation['date'] = date + dt.timedelta(hours=hours)
+            observations.append(observation)
+
+            last_hour = hours
+
+        return observations
+
+    @classmethod
+    def parse(cls, page: str) -> list[Forecast]:
+        logger.info('start parsing')
+        soup = BeautifulSoup(page, 'html.parser')
+        archive_table = soup.find('table', id='archiveTable')
+
+        if not archive_table:
+            logger.error(f'{cls.__name__} no content')
+            return []
+
+        try:
+            observations = cls.get_observations(archive_table)
+            return parse_obj_as(list[Forecast], observations)
+
+        except (AttributeError, ValidationError, IndexError) as error:
+            logger.error(f'{cls.__name__} {repr(error)}')
+            return []

@@ -42,6 +42,14 @@ services:
     env_file:
       - ./.env
 
+  selenium:
+    image: selenium/standalone-firefox
+    container_name: reservoirs_selenium
+    shm_size: 2gb
+    restart: always
+    depends_on:
+      - celery
+
   nginx:
     image: nginx:latest
     container_name: reservoirs_nginx
