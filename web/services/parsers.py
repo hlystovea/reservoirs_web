@@ -155,7 +155,6 @@ class RP5Parser(AbstractParser):
 
     @classmethod
     def parse(cls, page: str) -> list[Forecast]:
-        logger.info('start parsing')
         soup = BeautifulSoup(page, 'html.parser')
         archive_table = soup.find('table', id='archiveTable')
 
