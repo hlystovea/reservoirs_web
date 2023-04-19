@@ -8,7 +8,10 @@ from reservoirs.models import WaterSituation
 
 
 def get_earlist_date() -> str:
-    return WaterSituation.objects.earliest('date').date.isoformat()
+    try:
+        return WaterSituation.objects.earliest('date').date.isoformat()
+    except WaterSituation.DoesNotExist:
+        return '1970-01-01'
 
 
 def get_date_before(days_before: int = 90) -> str:
