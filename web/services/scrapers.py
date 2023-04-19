@@ -15,22 +15,17 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from reservoirs.models import Reservoir, WaterSituation
-from services.parsers import (AbstractParser, Forecast, KrasParser,
+from services.parsers import (AbstractParser, GismeteoParser, KrasParser,
                               RP5Parser, RushydroParser, Situation)
+from services.schemes import WeatherBase
 from weather.models import GeoObject, Weather
 
 logger = get_task_logger(__name__)
 
 
 class AbstractScraper(metaclass=ABCMeta):
-    first_date: dt.date
     parser: AbstractParser
     base_url: str
-
-    @classmethod
-    @abstractmethod
-    def get_date(cls) -> dt.date:
-        pass
 
     @classmethod
     @abstractmethod
@@ -187,10 +182,10 @@ class KrasScraper(SituationMixin):
         logger.info(f'{cls.__name__} stop scraping')
 
 
-class RP5Scraper(AbstractParser):
-    first_date = dt.date(2005, 2, 1)
-    parser = RP5Parser()
-    base_url = env.get('RP5_URL', 'https://rp5.ru/Архив_погоды_в_Бее')
+class RP5Scraper(AbstractScraper):
+    first_date: dt.date = dt.date(2005, 2, 1)
+    parser: RP5Parser = RP5Parser()
+    base_url: str = env.get('RP5_URL', 'https://rp5.ru/Архив_погоды_в_Бее')
 
     @staticmethod
     def get_driver() -> WebDriver:
@@ -246,12 +241,13 @@ class RP5Scraper(AbstractParser):
 
     @classmethod
     def save(
-            cls, forecast: Forecast, geo_object: GeoObject
+            cls, forecast: WeatherBase, geo_object: GeoObject
             ) -> tuple[Optional[Weather], bool]:
         try:
             obj, created = Weather.objects.update_or_create(
                 date=forecast.date,
                 geo_object=geo_object,
+                is_observable=True,
                 defaults=forecast.dict()
             )
             return obj, created
@@ -299,4 +295,79 @@ class RP5Scraper(AbstractParser):
         finally:
             driver.close()
 
+        logger.info(f'{cls.__name__} stop scraping')
+
+
+class GismeteoScraper(AbstractScraper):
+    parser: GismeteoParser = GismeteoParser()
+    base_url: str = env.get(
+        'GIS_URL', 'https://api.gismeteo.net/v2/weather/forecast'
+    )
+
+    @classmethod
+    def get_objects(cls) -> manager.BaseManager[GeoObject]:
+        return GeoObject.objects.filter(gismeteo_id__isnull=False).all()
+
+    @classmethod
+    def get_url(cls, geo_object: GeoObject) -> str:
+        return f'{cls.base_url}/{geo_object.gismeteo_id}/'
+
+    @classmethod
+    def get_data(cls, geo_object: GeoObject) -> dict:
+        url = cls.get_url(geo_object)
+        params = {
+            'days': 10,
+        }
+        headers = {
+            'X-Gismeteo-Token': env['GIS_TOKEN'],
+            'Accept-Encoding': 'gzip',
+        }
+
+        response = httpx.get(url=url, params=params, headers=headers)
+
+        if response.is_error:
+            raise httpx.HTTPError(
+                f'{response.status_code} {response.reason_phrase}')
+
+        return response.json()
+
+    @classmethod
+    def save(
+            cls, forecast: WeatherBase, geo_object: GeoObject
+            ) -> tuple[Optional[Weather], bool]:
+        try:
+            obj, created = Weather.objects.update_or_create(
+                date=forecast.date,
+                geo_object=geo_object,
+                is_observable=False,
+                defaults=forecast.dict()
+            )
+            return obj, created
+
+        except DatabaseError as error:
+            logger.error(f'{cls.__name__} {repr(error)}')
+            return None, False
+
+    @classmethod
+    def scrape(cls):
+        logger.info(f'{cls.__name__} start scraping')
+
+        geo_objects = cls.get_objects()
+        logger.info(f'Get {len(geo_objects)} geo objects')
+
+        saved_count = 0
+
+        for geo_object in geo_objects:
+            try:
+                data = cls.get_data(geo_object)
+                forecasts = cls.parser.parse(data)
+
+                for forecast in forecasts:
+                    _, saved = cls.save(forecast, geo_object)
+                    saved_count += saved
+
+            except httpx.HTTPError as error:
+                logger.error(f'Some error occured: {error!r}')
+
+        logger.info(f'{cls.__name__} saved {saved_count} new objs')
         logger.info(f'{cls.__name__} stop scraping')

@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel, root_validator, validator
 
 
-class Forecast(BaseModel):
+class WeatherBase(BaseModel):
     date: dt.datetime
     temp: float
     pressure: int
@@ -13,6 +13,10 @@ class Forecast(BaseModel):
     cloudiness: int
     wind_speed: float
     precipitation: float
+    is_observable: bool = False
+
+
+class RP5(WeatherBase):
     is_observable: bool = True
 
     def __init__(self, **kwargs):
@@ -37,6 +41,20 @@ class Forecast(BaseModel):
             return int(re.search(r'\d+', value).group())
         except (ValueError, TypeError, AttributeError):
             return 0
+
+
+class Gismeteo(WeatherBase):
+    def __init__(self, **kwargs):
+        kwargs['temp'] = kwargs['temperature']['air']['C']
+        kwargs['pressure'] = kwargs['pressure']['mm_hg_atm']
+        kwargs['humidity'] = kwargs['humidity']['percent']
+        kwargs['cloudiness'] = kwargs['cloudiness']['percent']
+        kwargs['wind_speed'] = kwargs['wind']['speed']['m_s']
+        kwargs['precipitation'] = kwargs['precipitation']['amount'] or 0
+        kwargs['date'] = dt.datetime.strptime(
+            kwargs['date']['local'], '%Y-%m-%d %H:%M:%S'
+        )
+        super().__init__(**kwargs)
 
 
 class Situation(BaseModel):

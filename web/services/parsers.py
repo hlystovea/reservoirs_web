@@ -10,7 +10,7 @@ from dateutil.parser import parse as parse_date
 from pydantic import parse_obj_as, ValidationError
 
 from reservoirs.models import Reservoir
-from services.schemes import Forecast, Situation
+from services.schemes import Gismeteo, RP5, Situation
 from services.utils import parser_info
 
 logger = get_task_logger(__name__)
@@ -154,7 +154,7 @@ class RP5Parser(AbstractParser):
         return observations
 
     @classmethod
-    def parse(cls, page: str) -> list[Forecast]:
+    def parse(cls, page: str) -> list[RP5]:
         soup = BeautifulSoup(page, 'html.parser')
         archive_table = soup.find('table', id='archiveTable')
 
@@ -164,8 +164,18 @@ class RP5Parser(AbstractParser):
 
         try:
             observations = cls.get_observations(archive_table)
-            return parse_obj_as(list[Forecast], observations)
+            return parse_obj_as(list[RP5], observations)
 
         except (AttributeError, ValidationError, IndexError) as error:
+            logger.error(f'{cls.__name__} {repr(error)}')
+            return []
+
+
+class GismeteoParser(AbstractParser):
+    @classmethod
+    def parse(cls, data: dict) -> list[Gismeteo]:
+        try:
+            return parse_obj_as(list[Gismeteo], data['response'])
+        except (KeyError, ValidationError) as error:
             logger.error(f'{cls.__name__} {repr(error)}')
             return []
