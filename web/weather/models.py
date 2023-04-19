@@ -114,8 +114,8 @@ class Weather(models.Model):
         verbose_name_plural = 'Погода'
         constraints = [
             models.UniqueConstraint(
-                fields=['date', 'geo_object'],
-                name='weather_weather_date_geo_object_id',
+                fields=['date', 'geo_object', 'is_observable'],
+                name='date_geo_object_is_observable_unique',
             )
         ]
 
