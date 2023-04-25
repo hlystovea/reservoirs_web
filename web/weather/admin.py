@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.db.models import CharField, TextField
 from django.forms import Textarea, TextInput
 
+from common.admin import ExportCsvMixin
 from .models import GeoObject, Weather
 
 
@@ -21,12 +22,13 @@ class GeoObjectAdmin(MixinAdmin):
 
 
 @admin.register(Weather)
-class WeatherAdmin(MixinAdmin):
+class WeatherAdmin(MixinAdmin, ExportCsvMixin):
     list_display = ('id', 'date', 'object_name', 'temp', 'pressure',
                     'humidity', 'cloudiness', 'wind_speed',
                     'precipitation', 'is_observable')
     list_filter = ('geo_object__name', 'is_observable')
     date_hierarchy = 'date'
+    actions = ['export_as_csv']
 
     @admin.display(description='Название объекта')
     def object_name(self, obj):

@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.db.models import CharField, TextField
 from django.forms import Textarea, TextInput
 
+from common.admin import ExportCsvMixin
 from .models import Reservoir, WaterSituation
 
 
@@ -23,11 +24,12 @@ class ReservoirAdmin(MixinAdmin):
 
 
 @admin.register(WaterSituation)
-class WaterSituationAdmin(MixinAdmin):
+class WaterSituationAdmin(MixinAdmin, ExportCsvMixin):
     list_display = ('id', 'reservoir_name', 'date', 'level', 'free_capacity',
                     'inflow', 'outflow', 'spillway')
     list_filter = ('reservoir__name', )
     date_hierarchy = 'date'
+    actions = ['export_as_csv']
 
     @admin.display(description='Наименование вдхр.')
     def reservoir_name(self, obj):
