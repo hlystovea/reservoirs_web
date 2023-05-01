@@ -57,6 +57,17 @@ class Gismeteo(WeatherBase):
         super().__init__(**kwargs)
 
 
+class Roshydromet(WeatherBase):
+    humidity: int = 50
+
+    @validator('wind_speed', pre=True)
+    def field_must_be_integer(cls, value):
+        try:
+            return int(re.search(r'\d+', value).group())
+        except (ValueError, TypeError, AttributeError):
+            return 0
+
+
 class Situation(BaseModel):
     date: Optional[dt.date]
     level: float

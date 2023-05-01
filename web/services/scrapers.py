@@ -16,7 +16,8 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 from reservoirs.models import Reservoir, WaterSituation
 from services.parsers import (AbstractParser, GismeteoParser, KrasParser,
-                              RP5Parser, RushydroParser, Situation)
+                              RoshydrometParser, RP5Parser, RushydroParser,
+                              Situation)
 from services.schemes import WeatherBase
 from weather.models import GeoObject, Weather
 
@@ -371,3 +372,30 @@ class GismeteoScraper(AbstractScraper):
 
         logger.info(f'{cls.__name__} saved {saved_count} new objs')
         logger.info(f'{cls.__name__} stop scraping')
+
+
+class RoshydrometScraper(GismeteoScraper):
+    parser: RoshydrometParser = RoshydrometParser()
+    base_url: str = env.get(
+        'ROSHYDROMET_URL', 'https://www.meteorf.gov.ru/product/weather'
+    )
+
+    @classmethod
+    def get_objects(cls) -> manager.BaseManager[GeoObject]:
+        return GeoObject.objects.filter(roshydromet_id__isnull=False).all()
+
+    @classmethod
+    def get_url(cls, geo_object: GeoObject) -> str:
+        return f'{cls.base_url}/{geo_object.roshydromet_id}/'
+
+    @classmethod
+    def get_data(cls, geo_object: GeoObject) -> str:
+        url = cls.get_url(geo_object)
+
+        response = httpx.get(url=url, verify=False)
+
+        if response.is_error:
+            raise httpx.HTTPError(
+                f'{response.status_code} {response.reason_phrase}')
+
+        return response.text

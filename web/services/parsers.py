@@ -10,7 +10,7 @@ from dateutil.parser import parse as parse_date
 from pydantic import parse_obj_as, ValidationError
 
 from reservoirs.models import Reservoir
-from services.schemes import Gismeteo, RP5, Situation
+from services.schemes import Gismeteo, Roshydromet, RP5, Situation
 from services.utils import parser_info
 
 logger = get_task_logger(__name__)
@@ -129,7 +129,7 @@ class RP5Parser(AbstractParser):
         return dict(zip(headlines[::-1], cls.get_values(row)[::-1]))
 
     @classmethod
-    def get_observations(cls, table: Union[Tag, NavigableString]) -> list[dict]:
+    def get_observations(cls, table: Union[Tag, NavigableString]) -> list[dict]:  # noqa(E501)
         date_str = table.find('td', **{'class_': 'cl_dt'})
         date = parse_date(date_str.text, parserinfo=parser_info)
 
@@ -177,5 +177,62 @@ class GismeteoParser(AbstractParser):
         try:
             return parse_obj_as(list[Gismeteo], data['response'])
         except (KeyError, ValidationError) as error:
+            logger.error(f'{cls.__name__} {repr(error)}')
+            return []
+
+
+class RoshydrometParser(AbstractParser):
+    @staticmethod
+    def get_values(row: Tag) -> list:
+        return re.findall(r'сегодня?|-?[0-9]+|штиль?', row.text, re.I)[-5:]
+
+    @classmethod
+    def get_observations(cls, table: Union[Tag, NavigableString]) -> list[dict]:  # noqa(E501)
+        keys = (
+            'temp',
+            'pressure',
+            'precipitation',
+            'cloudiness',
+            'wind_speed',
+            'date',
+        )
+        hours = {
+            'ночью': 1,
+            'днем': 13,
+        }
+
+        date = dt.date.today()
+        forecasts = []
+
+        for row in table.find_all('tr'):
+            date_str = row.find('div', **{'class': 'date'})
+
+            if date_str and date_str.text != 'Сегодня':
+                date = parse_date(date_str.text, parserinfo=parser_info)
+
+            time = row.find('div', **{'class': 'small'}).text
+            datetime = dt.datetime.combine(date, dt.time(hours.get(time, 0)))
+
+            values = cls.get_values(row)
+            values.append(datetime)
+
+            forecasts.append(dict(zip(keys, values)))
+
+        return forecasts
+
+    @classmethod
+    def parse(cls, page: str) -> list[Roshydromet]:
+        soup = BeautifulSoup(page, 'html.parser')
+        forecast_table = soup.find('tbody')
+
+        if not forecast_table:
+            logger.error(f'{cls.__name__} no content')
+            return []
+
+        try:
+            forecasts = cls.get_observations(forecast_table)
+            return parse_obj_as(list[Roshydromet], forecasts)
+
+        except (AttributeError, ValidationError, IndexError) as error:
             logger.error(f'{cls.__name__} {repr(error)}')
             return []
