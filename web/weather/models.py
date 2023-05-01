@@ -24,6 +24,12 @@ class GeoObject(models.Model):
         blank=True,
         null=True,
     )
+    roshydromet_id = models.IntegerField(
+        verbose_name='ID географического объекта (Росгидромет)',
+        unique=True,
+        blank=True,
+        null=True,
+    )
     latitude = models.FloatField(
         verbose_name='Широта расположения географического объекта',
         blank=True,

@@ -16,7 +16,8 @@ class MixinAdmin(admin.ModelAdmin):
 
 @admin.register(GeoObject)
 class GeoObjectAdmin(MixinAdmin):
-    list_display = ('id', 'name', 'gismeteo_id', 'latitude', 'longitude')
+    list_display = ('id', 'name', 'station_id', 'gismeteo_id',
+                    'latitude', 'longitude')
     search_fields = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
 
