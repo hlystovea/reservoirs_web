@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class PredictorsConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'predictors'
+    verbose_name = 'Прогнозирование'

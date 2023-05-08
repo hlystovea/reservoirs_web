@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_celery_beat',
     'tasks.apps.TasksConfig',
+    'predictors.apps.PredictorsConfig',
 ]
 
 
