@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM hlystovea/pytorch-forecasting:latest
 WORKDIR /reservoirs_web
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt

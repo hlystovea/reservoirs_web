@@ -2,6 +2,7 @@ from celery.utils.log import get_task_logger
 from httpx import HTTPError
 
 from web.celery import app
+from services.forecasting import water_situation_forecasting
 from services.scrapers import (GismeteoScraper, KrasScraper,
                                RoshydrometScraper, RP5Scraper, RushydroScraper)
 
@@ -35,4 +36,10 @@ def run_gismeteo_parsing():
 @app.task(autoretry_for=(HTTPError, ), retry_backoff=20)
 def run_roshydromet_parsing():
     RoshydrometScraper.scrape()
+    return True
+
+
+@app.task
+def run_water_situation_forecasting():
+    water_situation_forecasting()
     return True

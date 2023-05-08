@@ -21,6 +21,7 @@ httpx = "*"
 beautifulsoup4 = "*"
 pydantic = "*"
 selenium = "*"
+pytorch-forecasting = "*"
 
 [dev-packages]
 django-extensions = "*"
