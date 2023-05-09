@@ -127,10 +127,10 @@ class InflowForecastWorker:
         logger.info(f'{self.__class__.__name__} start forecasting')
 
         prediction_data = self.get_prediction_data()
-        prediction_data.info()
-        raw_predictions = self.model.predict(prediction_data, mode='raw')
-        output_size = self.model.hparams['output_size']
+        raw_predictions = self.model.predict(
+            prediction_data, mode='raw', return_x=True)
 
+        output_size = self.model.hparams['output_size']
         inflows = np.rint(
             raw_predictions.output['prediction'][0][:, output_size//2]
         ).numpy()
