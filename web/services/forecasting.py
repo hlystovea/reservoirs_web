@@ -139,9 +139,12 @@ class InflowForecastWorker:
         saved_count = 0
 
         for inflow in inflows:
-            saved = self.save(date, inflow)
+
+            if date > dt.date.today():
+                saved = self.save(date, inflow)
+                saved_count += saved
+
             date += dt.timedelta(days=1)
-            saved_count += saved
 
         logger.info(f'{self.__class__.__name__} saved {saved_count} new objs')
 
