@@ -2,6 +2,11 @@ from django.db import models
 
 
 class WaterSituationPredictor(models.Model):
+    name = models.CharField(
+        verbose_name='Название',
+        max_length=200,
+        unique=True,
+    )
     reservoir = models.OneToOneField(
         to='reservoirs.Reservoir',
         to_field='id',
@@ -23,6 +28,9 @@ class WaterSituationPredictor(models.Model):
         verbose_name = 'Модель гидрологической обстановки'
         verbose_name_plural = 'Модели гидрологической обстановки'
 
+    def __str__(self):
+        return self.name
+
 
 class WaterSituationForecast(models.Model):
     date = models.DateField(
@@ -31,10 +39,10 @@ class WaterSituationForecast(models.Model):
     inflow = models.IntegerField(
         verbose_name='Приток',
     )
-    reservoir = models.ForeignKey(
-        to='reservoirs.Reservoir',
+    predictor = models.ForeignKey(
+        to='predictors.WaterSituationPredictor',
         to_field='id',
-        verbose_name='Водохранилище',
+        verbose_name='Модель',
         on_delete=models.CASCADE,
         related_name='forecasts',
     )
@@ -48,7 +56,7 @@ class WaterSituationForecast(models.Model):
         verbose_name_plural = 'Прогнозы гидрологической обстановки'
         constraints = [
             models.UniqueConstraint(
-                fields=['date', 'reservoir_id'],
-                name='date_reservoir_id_unique_together',
+                fields=['date', 'predictor'],
+                name='date_predictor_unique_together',
             )
         ]
