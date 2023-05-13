@@ -7,7 +7,7 @@ class WaterSituationPredictor(models.Model):
         max_length=200,
         unique=True,
     )
-    reservoir = models.OneToOneField(
+    reservoir = models.ForeignKey(
         to='reservoirs.Reservoir',
         to_field='id',
         verbose_name='Водохранилище',
