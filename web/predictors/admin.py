@@ -10,9 +10,9 @@ class MixinAdmin(admin.ModelAdmin):
 
 
 @admin.register(WaterSituationPredictor)
-class ReservoirAdmin(MixinAdmin):
-    list_display = ('id', 'reservoir', 'geo_objects_count')
-    list_filter = ('reservoir__name', )
+class WaterSituationPredictorAdmin(MixinAdmin):
+    list_display = ('id', 'name', 'reservoir', 'geo_objects_count')
+    list_filter = ('reservoir', )
 
     @admin.display(description='Кол-во объектов')
     def geo_objects_count(self, obj):
@@ -24,7 +24,7 @@ class ReservoirAdmin(MixinAdmin):
 class WaterSituationForecastAdmin(MixinAdmin, ExportCsvMixin):
     list_display = ('id', 'reservoir_name', 'date',
                     'inflow', 'forecast_date', 'predictor')
-    list_filter = ('predictor__reservoir', 'predictor')
+    list_filter = ('predictor__reservoir', 'predictor__name')
     date_hierarchy = 'date'
     actions = ['export_as_csv']
 

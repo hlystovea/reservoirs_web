@@ -2,6 +2,11 @@ from django.db import models
 
 
 class WaterSituationPredictor(models.Model):
+    name = models.CharField(
+        verbose_name='Название',
+        max_length=200,
+        unique=True,
+    )
     reservoir = models.OneToOneField(
         to='reservoirs.Reservoir',
         to_field='id',
@@ -22,6 +27,9 @@ class WaterSituationPredictor(models.Model):
     class Meta:
         verbose_name = 'Модель гидрологической обстановки'
         verbose_name_plural = 'Модели гидрологической обстановки'
+
+    def __str__(self):
+        return self.name
 
 
 class WaterSituationForecast(models.Model):
