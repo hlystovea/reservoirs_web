@@ -115,7 +115,7 @@ class InflowForecastWorker:
         try:
             _, created = WaterSituationForecast.objects.update_or_create(
                 date=date,
-                reservoir=self.predictor.reservoir,
+                predictor=self.predictor,
                 defaults={'inflow': inflow}
             )
             return created
