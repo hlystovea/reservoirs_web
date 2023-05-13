@@ -21,12 +21,21 @@ class ReservoirAdmin(MixinAdmin):
 
 
 @admin.register(WaterSituationForecast)
-class WaterSituationAdmin(MixinAdmin, ExportCsvMixin):
-    list_display = ('id', 'reservoir_name', 'date', 'inflow', 'forecast_date')
-    list_filter = ('reservoir__name', )
+class WaterSituationForecastAdmin(MixinAdmin, ExportCsvMixin):
+    list_display = ('id', 'reservoir_name', 'date',
+                    'inflow', 'forecast_date', 'predictor')
+    list_filter = ('predictor__reservoir', 'predictor')
     date_hierarchy = 'date'
     actions = ['export_as_csv']
 
     @admin.display(description='Наименование вдхр.')
     def reservoir_name(self, obj):
-        return obj.reservoir.name
+        return obj.predictor.reservoir.name
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related(
+            'predictor'
+        ).prefetch_related(
+            'predictor__reservoir'
+        )
