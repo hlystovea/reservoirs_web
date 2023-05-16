@@ -16,6 +16,7 @@ class InflowForecastWorker:
     def __init__(self, predictor: WaterSituationPredictor):
         self.predictor = predictor
         self._model = None
+        self._last_date = None
         self.model: TFT = self._get_model()
 
     def _get_model(self) -> TFT:
@@ -84,10 +85,10 @@ class InflowForecastWorker:
         prepared_weather = self.prepare_weather(observed_weather)
         return situation_data.merge(prepared_weather, on='date', how='left')
 
-    def get_decoder_data(self, weather_data, last_date) -> pd.DataFrame:
+    def get_decoder_data(self, weather_data) -> pd.DataFrame:
         forecasted_weather = self.get_forecasted_weather(weather_data)
         prepared_weather = self.prepare_weather(forecasted_weather)
-        return prepared_weather.loc[prepared_weather['date'] > last_date]
+        return prepared_weather.loc[prepared_weather['date'] > self._last_date]
 
     def get_prediction_data(self) -> pd.DataFrame:
         weather_data = self.get_weather_data()
@@ -95,8 +96,8 @@ class InflowForecastWorker:
         situation_data = self.get_situation_data()
 
         encoder_data = self.get_encoder_data(situation_data, weather_data)
-        decoder_data = self.get_decoder_data(
-            weather_data, encoder_data.date.max())
+        self._last_date = encoder_data.date.max()
+        decoder_data = self.get_decoder_data(weather_data)
 
         prediction_data = pd.concat(
             [encoder_data, decoder_data],
@@ -140,7 +141,7 @@ class InflowForecastWorker:
 
         for inflow in inflows:
 
-            if date > dt.date.today():
+            if date > self._last_date:
                 saved = self.save(date, inflow)
                 saved_count += saved
 
