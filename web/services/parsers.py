@@ -63,7 +63,6 @@ class RushydroParser(AbstractParser):
 class KrasParser(AbstractParser):
     @staticmethod
     def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-
         level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[2]
         inflow_str = raw_data.find_all(string=re.compile('приток общий'))[0]
         spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[2]  # noqa(E501)
@@ -105,6 +104,21 @@ class KrasParser(AbstractParser):
 
         except (ValueError, AttributeError, ValidationError) as error:
             logger.error(f'{cls.__name__} {repr(error)}')
+
+
+class SayanParser(KrasParser):
+    @staticmethod
+    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
+        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[0]
+        inflow_str = raw_data.find_all(string=re.compile('приток'))[0]
+        spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[0]  # noqa(E501)
+
+        level = re.findall(r'[0-9]+,[0-9]+', level_str)[0]
+        outflow = re.findall(r'[0-9]+', level_str)[-1]
+        inflow = re.findall(r'[0-9]+', inflow_str)[0]
+        spillway = re.findall(r'[0-9]+', spillway_str)[0]
+
+        return level, inflow, outflow, spillway
 
 
 class RP5Parser(AbstractParser):
