@@ -3,7 +3,8 @@ from httpx import HTTPError
 
 from web.celery import app
 from services.forecasting import water_situation_forecasting
-from services.scrapers import (GismeteoScraper, KrasScraper,
+from services.parsers import KrasParser
+from services.scrapers import (GismeteoScraper, EbvuScraper,
                                RoshydrometScraper, RP5Scraper, RushydroScraper)
 
 logger = get_task_logger(__name__)
@@ -17,7 +18,8 @@ def run_rushydro_parsing():
 
 @app.task(autoretry_for=(HTTPError, ), retry_backoff=20)
 def run_kras_parsing():
-    KrasScraper.scrape()
+    parser = KrasParser()
+    EbvuScraper(parser, 'kras').scrape()
     return True
 
 
