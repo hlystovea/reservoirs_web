@@ -124,7 +124,7 @@ class RushydroScraper(SituationMixin):
 class KrasScraper(SituationMixin):
     first_date = dt.date(2021, 7, 1)
     parser = KrasParser()
-    base_url = env.get('KRAS_URL', 'https://enbvu.ru/i03_deyatelnost')
+    base_url = env.get('EBVU_URL', 'https://enbvu.ru/i03_deyatelnost')
     slug: str = 'kras'
     month_names: dict = {
         1: 'jan',
