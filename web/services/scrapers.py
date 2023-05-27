@@ -15,9 +15,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from reservoirs.models import Reservoir, WaterSituation
-from services.parsers import (AbstractParser, GismeteoParser, KrasParser,
-                              RoshydrometParser, RP5Parser, RushydroParser,
-                              Situation)
+from services.parsers import (AbstractParser, GismeteoParser,
+                              RoshydrometParser, RP5Parser,
+                              RushydroParser, Situation)
 from services.schemes import WeatherBase
 from weather.models import GeoObject, Weather
 
@@ -121,11 +121,9 @@ class RushydroScraper(SituationMixin):
         logger.info(f'{cls.__name__} stop scraping')
 
 
-class KrasScraper(SituationMixin):
+class EbvuScraper(SituationMixin):
     first_date = dt.date(2021, 7, 1)
-    parser = KrasParser()
     base_url = env.get('EBVU_URL', 'https://enbvu.ru/i03_deyatelnost')
-    slug: str = 'kras'
     month_names: dict = {
         1: 'jan',
         2: 'feb',
@@ -141,15 +139,18 @@ class KrasScraper(SituationMixin):
         12: 'dec',
     }
 
-    @classmethod
-    def get_date(cls):
+    def __init__(self, parser: AbstractParser, reservoir_slug: str):
+        self.parser = parser
+        self.slug = reservoir_slug
+
+    def get_date(self):
         try:
             last_situation = WaterSituation.objects.filter(
-                reservoir__slug=cls.slug).latest('date')
+                reservoir__slug=self.slug).latest('date')
             return last_situation.date + dt.timedelta(days=1)
 
         except WaterSituation.DoesNotExist:
-            return cls.first_date
+            return self.first_date
 
     @classmethod
     def get_url(cls, date: dt.date) -> str:
@@ -161,26 +162,27 @@ class KrasScraper(SituationMixin):
             page_number, cls.month_names[date.month]
         )
 
-    @classmethod
-    def scrape(cls):
-        logger.info(f'{cls.__name__} start scraping')
-        reservoir = Reservoir.objects.get(slug=cls.slug)
+    def scrape(self):
+        logger.info(f'{self.__class__.__name__} start scraping')
+        reservoir = Reservoir.objects.get(slug=self.slug)
 
-        date = cls.get_date()
+        date = self.get_date()
 
         while date <= date.today():
-            page = cls.get_page(date=date)
-            situation = cls.parser.parse(page, date)
+            page = self.get_page(date=date)
+            situation = self.parser.parse(page, date)
 
             if situation:
-                obj, saved = cls.save(date, situation, reservoir)
+                obj, saved = self.save(date, situation, reservoir)
 
                 if saved:
-                    logger.info(f'{cls.__name__} saved new obj: {obj}')
+                    logger.info(
+                        f'{self.__class__.__name__} saved new obj: {obj}'
+                    )
 
             date += dt.timedelta(days=1)
 
-        logger.info(f'{cls.__name__} stop scraping')
+        logger.info(f'{self.__class__.__name__} stop scraping')
 
 
 class RP5Scraper(AbstractScraper):
