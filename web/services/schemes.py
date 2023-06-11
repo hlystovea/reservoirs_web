@@ -2,6 +2,7 @@ import re
 import datetime as dt
 from typing import Optional
 
+from dateutil.parser import parse as parse_date
 from pydantic import BaseModel, root_validator, validator
 
 
@@ -85,3 +86,11 @@ class Situation(BaseModel):
             if isinstance(value, str) and 'нет' in value:
                 values[key] = None
         return values
+
+
+class RushydroSituation(Situation):
+    @validator('date', pre=True)
+    def parsedate(cls, value):
+        today = dt.date.today()
+        year = today.year - (today.month < int(value.split('.')[-1]))
+        return parse_date(f'{value}.{year}', dayfirst=True)

@@ -7,7 +7,7 @@ from typing import Optional
 import httpx
 from celery.utils.log import get_task_logger
 from django.db import DatabaseError
-from django.db.models import Max, manager
+from django.db.models import manager
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
@@ -41,9 +41,11 @@ class AbstractScraper(metaclass=ABCMeta):
 
 class SituationMixin(AbstractScraper):
     @classmethod
-    def get_page(cls, date: dt.date) -> str:
-        url = cls.get_url(date)
-        response = httpx.get(url=url)
+    def get_page(cls, *args, **kwargs) -> str:
+        url = cls.get_url(*args, **kwargs)
+
+        with httpx.Client() as client:
+            response = client.get(url, follow_redirects=True)
 
         if response.is_error:
             raise httpx.HTTPError(
@@ -69,55 +71,36 @@ class SituationMixin(AbstractScraper):
 
 
 class RushydroScraper(SituationMixin):
-    first_date = dt.date(2013, 4, 13)
     parser = RushydroParser()
     base_url = env.get(
-        'RUSHYDRO_URL', 'http://www.rushydro.ru/hydrology/informer'
+        'RUSHYDRO_URL', 'https://www.rushydro.ru/informer/'
     )
 
     @classmethod
-    def get_date(cls):
-        try:
-            last_date = WaterSituation.objects.exclude(
-                reservoir__slug='kras'
-            ).values(
-                'reservoir'
-            ).annotate(
-                last_date=Max('date')
-            ).earliest(
-                'last_date'
-            )['last_date']
-            return last_date + dt.timedelta(days=1)
-
-        except WaterSituation.DoesNotExist:
-            return cls.first_date
-
-    @classmethod
-    def get_url(cls, date: dt.date) -> str:
-        return f'{cls.base_url}/?date={date.isoformat()}'
+    def get_url(cls, *args, **kwargs) -> str:
+        return cls.base_url
 
     @classmethod
     def scrape(cls):
         logger.info(f'{cls.__name__} start scraping')
 
-        date = cls.get_date()
-        reservoirs = Reservoir.objects.exclude(slug='kras').all()
+        reservoirs = Reservoir.objects.filter(
+            station_name__isnull=False
+        ).exclude(
+            slug='kras'
+        ).all()
 
-        while date <= date.today():
-            page = cls.get_page(date=date)
-            saved_count = 0
+        page = cls.get_page()
+        saved_count = 0
 
-            for reservoir in reservoirs:
-                situation = cls.parser.parse(page, reservoir)
+        for reservoir in reservoirs:
+            situations = cls.parser.parse(page, reservoir)
 
-                if situation:
-                    _, saved = cls.save(situation.date, situation, reservoir)
-                    saved_count += saved
+            for situation in situations:
+                _, saved = cls.save(situation.date, situation, reservoir)
+                saved_count += saved
 
-            logger.info(f'{cls.__name__} saved {saved_count} new objs')
-
-            date += dt.timedelta(days=1)
-
+        logger.info(f'{cls.__name__} saved {saved_count} new objs')
         logger.info(f'{cls.__name__} stop scraping')
 
 
