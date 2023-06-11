@@ -11,6 +11,13 @@ class Reservoir(models.Model):
         unique=True,
         max_length=64,
     )
+    station_name = models.CharField(
+        verbose_name='Название ГЭС',
+        unique=True,
+        max_length=64,
+        blank=True,
+        null=True,
+    )
     force_level = models.FloatField(
         verbose_name='ФПУ',
         max_length=64,

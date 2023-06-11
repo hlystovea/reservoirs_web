@@ -10,7 +10,8 @@ from dateutil.parser import parse as parse_date
 from pydantic import parse_obj_as, ValidationError
 
 from reservoirs.models import Reservoir
-from services.schemes import Gismeteo, Roshydromet, RP5, Situation
+from services.schemes import (Gismeteo, Roshydromet, RP5,
+                              RushydroSituation, Situation)
 from services.utils import parser_info
 
 logger = get_task_logger(__name__)
@@ -24,40 +25,43 @@ class AbstractParser(metaclass=ABCMeta):
 
 
 class RushydroParser(AbstractParser):
-    @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> list:
-        return raw_data.find_all('b')[3:]
-
-    @staticmethod
-    def preprocessing(values: Iterable) -> dict:
-        keys = ('level', 'free_capacity', 'inflow', 'outflow', 'spillway')
-        normalized_values = (v.text.split()[0].split('м')[0] for v in values)
-        return dict(zip(keys, normalized_values))
+    params = {
+        'date': 'water-date',
+        'level': 'water-level',
+        'free_capacity': 'water-polemk',
+        'inflow': 'water-pritok',
+        'outflow': 'water-rashod',
+        'spillway': 'water-sbros',
+    }
 
     @classmethod
-    def parse(cls, page: str, reservoir: Reservoir) -> Optional[Situation]:
+    def get_values(cls, data: Union[Tag, NavigableString]) -> Iterable:
+        return zip(*(data[i].split(',')[::-1] for i in cls.params.values()))
+
+    @classmethod
+    def preprocessing(cls, values: Iterable) -> list[dict]:
+        return [dict(zip(cls.params.keys(), i)) for i in values]
+
+    @classmethod
+    def parse(cls, page: str, reservoir: Reservoir) -> list[RushydroSituation]:
         soup = BeautifulSoup(page, 'html.parser')
+        situations = []
 
         try:
-            date_str = soup.find('input', id='popupDatepicker').get('value')
-            date = dt.datetime.strptime(date_str, '%d.%m.%Y').date()
+            options = soup.find('select', id="ges")
+            option = options.find('option', string=reservoir.station_name)
 
-            logger.info(
-                f'{cls.__name__} parsed date {date:%Y-%m-%d}, {reservoir.name}'
-            )
+            logger.info(f'{cls.__name__} parsed {reservoir.name}')
 
-            raw_data = soup.find(
-                'div',
-                class_=f'informer-block {reservoir.slug}',
-            )
+            if option:
+                data = cls.preprocessing(cls.get_values(option))
+                situations = parse_obj_as(list[RushydroSituation], data)
 
-            if raw_data:
-                normalized_values = cls.preprocessing(cls.get_values(raw_data))
+        except (ValueError, AttributeError, ValidationError, KeyError) as e:
+            logger.error(f'{cls.__name__} {repr(e)}')
 
-                return Situation(date=date, **normalized_values)
-
-        except (ValueError, AttributeError, ValidationError) as error:
-            logger.error(f'{cls.__name__} {repr(error)}')
+        finally:
+            return situations
 
 
 class KrasParser(AbstractParser):
