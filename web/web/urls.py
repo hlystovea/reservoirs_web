@@ -6,7 +6,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
-from core.views import IndexPageView
+from core.views import IndexPageView, ForecastPageView
 
 
 schema_view = get_schema_view(
@@ -24,8 +24,10 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('', IndexPageView.as_view(), name='index'),
     path('admin/', admin.site.urls),
+    path('forecast/', ForecastPageView.as_view(), name='forecast'),
     path('api/', include('reservoirs.urls', namespace='reservoirs')),
     path('api/', include('common.urls', namespace='common')),
+    path('api/', include('predictors.urls', namespace='predictors')),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),  # noqa (E501)
     re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),  # noqa (E501)
     re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),  # noqa (E501)

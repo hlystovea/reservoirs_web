@@ -12,3 +12,7 @@ class IndexPageView(TemplateView):
         context['default_date'] = get_date_before()
         context['earlist_date'] = get_earlist_date()
         return context
+
+
+class ForecastPageView(TemplateView):
+    template_name = 'forecast.html'
