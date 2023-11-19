@@ -1,16 +1,22 @@
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (IntegerField, ModelSerializer,
-                                        SerializerMethodField)
+                                        SerializerMethodField,
+                                        SlugRelatedField)
 
 from predictors.models import WaterSituationForecast, WaterSituationPredictor
+from reservoirs.models import Reservoir
 
 
 class PredictorSerializer(ModelSerializer):
     forecast = SerializerMethodField()
+    reservoir = SlugRelatedField(
+        slug_field='name',
+        queryset=Reservoir.objects.all(),
+    )
 
     class Meta:
         model = WaterSituationPredictor
-        fields = '__all__'
+        fields = ('id', 'name', 'reservoir', 'forecast')
 
     def get_forecast(self, obj):
         request = self.context['request']
@@ -23,4 +29,4 @@ class ForecastSerializer(ModelSerializer):
 
     class Meta:
         model = WaterSituationForecast
-        fields = '__all__'
+        exclude = ('predictor', )
