@@ -12,6 +12,7 @@ class WaterSituationPredictor(models.Model):
         to_field='id',
         verbose_name='Водохранилище',
         on_delete=models.CASCADE,
+        related_name='predictors',
     )
     checkpoint = models.FileField(
         verbose_name='Модель',
