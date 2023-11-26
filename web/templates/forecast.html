@@ -6,8 +6,22 @@
       <p class="lead mb-3 mt-4">Выбрать данные:</p>
       <div class="row g-3 pl-4 pr-4">
         <div class="col-sm-12">
+          <label for="selectReservoir" class="form-label text-muted">Водохранилище</label>
+          <select id="selectReservoir" class="form-select p-1" name ="selectReservoir">
+          </select>
+        </div>
+        <div class="col-sm-12">
           <label for="selectPredictor" class="form-label text-muted">Модель</label>
-          <select id="selectPredictor" class="form-select p-1" name ="selectPredictor"></select>
+          <select id="selectPredictor" class="form-select p-1" name ="selectPredictor">
+          </select>
+        </div>
+        <div class="col-sm-6">
+          <label for="dateFrom" class="form-label text-muted">Начало</label>
+          <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value="">
+        </div>
+        <div class="col-sm-6">
+          <label for="dateTo" class="form-label text-muted">Конец</label>
+          <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}">
         </div>
         <div class="col-sm-12 mt-4 mb-4">
           <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
@@ -23,142 +37,102 @@
     </div>
   </div>
 </div>
-{% block jquery %}
-  <script>
-    var predictors = [];
-    // requesting a list of predictors
-    $.ajax({
-      url: "{% url 'predictors:predictor-list' %}",
-      success: function(data) {
-        predictors = data;
-        $("#selectPredictor option").remove();
-        for (let i in data)
-          $("#selectPredictor").append("<option id=" + data[i].id + " val=" + data[i].id + ">" + data[i].name + "</option>");
-        updateContent();
-      },          
-      error: function(error_data) {
-        console.log(error_data)
-      }
-    });
+<script>
+  const selectReservoir = document.getElementById('selectReservoir');
+  const selectPredictor = document.getElementById('selectPredictor');
+  const updateButton = document.getElementById('updateButton');
+  const dateFrom = document.getElementById('dateFrom');
+  const dateTo = document.getElementById('dateTo');
 
-    // updating content by change the select
-    $(document).ready(function() {
-      $("#selectPredictor").change(function() {
-        updateContent();
-      });
-    });
+  function setDates() {
+    let start = new Date();
+    let end = new Date();
 
-    // updating content by click the button
-    $(document).ready(function() {
-      $("#updateButton").click(function() {
-        updateContent();
-      });
-    });
+    start.setDate(start.getDate() - 90);
+    end.setDate(end.getDate() + 10);
 
-    // gets object by id
-    function getObjectById(objects, id) {
-      if (id == null) {
-        return objects[0]
-      };
-      return objects.find(obj => obj.id == id);
-    }
+    dateFrom.value = start.toISOString().split('T')[0];
+    dateTo.value = end.toISOString().split('T')[0];
+  }
 
-    function updateContent() {
-      let predictor_id  = $("#selectPredictor").find("option:selected").attr('val');
-      let predictor = getObjectById(predictors, predictor_id);
-      getForecast(predictor);
-    };
+  function optionElementTemplate(value, text, selected=false) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.innerText = text;
+    option.selected = (selected) ? true : false;
+    return option
+  }
 
-    // formatting water situation data
-    function formatForecastToArray(data) {
-      let dates = [];
-      let inflows = [];
-      let facts = [];
-    
-      data.forEach((item, index, array) => {
-        dates.push(item.date);
-        inflows.push(item.inflow);
-        facts.push(item.fact);
-      });
-    
-      return {
-        dates: dates,
-        inflows: inflows,
-        facts: facts
-      };
-    }
-
-    function setForecastChart(chart, data) {
-      chart.data.labels = data.dates;
-      chart.data.datasets[0].data = data.inflows;
-      chart.data.datasets[1].data = data.facts;
-      chart.update();
-    }
-
-    // gets water situation data
-    function getForecast(predictor) {
-      let url = predictor.forecast
-      $.ajax({
-        method: "GET",
-        url: url,
-        success: function(data) {
-          data = formatForecastToArray(data);
-          setForecastChart(forecastChart, data);
-        },
-        error: function(error_data) {
-          console.log(error_data);
+  async function renderSelectOptions(item, url, selectedValue='', field='name') {
+    await fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        let options = [];
+        if (!selectedValue) {
+          obj = data.shift();
+          options.push(optionElementTemplate(obj.id, obj[field], true));
         }
+        data.forEach(obj => {
+          let selected = obj.id == selectedValue;
+          options.push(optionElementTemplate(obj.id, obj[field], selected));
+        });
+        item.replaceChildren(...options);
+      })
+      .catch(error => {
+        console.log('Error: ', error);
       });
-    };
+  }
 
-    var forecastData = {
-      labels: [],
-      datasets: [{
-        label: "Прогноз притока, м\u00B3/с",
-        data: [],
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
-        borderColor: "rgba(255, 99, 132, 1)",
-        borderWidth: 1,
-        fill: true,
-      },
-      {
-        label: "Фактический приток, м\u00B3/с",
-        data: [],
-        backgroundColor: "rgba(201, 203, 207, 0.2)",
-        borderColor: "rgba(201, 203, 207, 1)",
-        borderWidth: 1,
-        fill: true,
-      }]
+  async function renderSelectReservoir() {
+    const url = `{% url "reservoirs:reservoir-list" %}?has_predictors=true`;
+    await renderSelectOptions(selectReservoir, url);
+  }
+
+  async function renderSelectPredictor() {
+    reservoir_pk = selectReservoir.value;
+    const url = `{% url "predictors:predictor-list" %}?reservoir=${reservoir_pk}`;
+    await renderSelectOptions(selectPredictor, url);
+  }
+
+  async function renderForecast() {
+    const predictor_pk = selectPredictor.value;
+    const start = dateFrom.value;
+    const end = dateTo.value;
+    const url = `/api/v1/predictors/${predictor_pk}/forecast/?start=${start}&end=${end}`;
+    await fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        data = formatForecastToArray(data);
+        setForecastChart(forecastChart, data);
+      })
+      .catch(error => {
+        console.log('Error: ', error);
+      });
+  };
+
+  const forecastCtx = document.getElementById('forecastChart').getContext('2d');
+  const forecastChart = new Chart(forecastCtx, forecastConfig);
+
+  selectReservoir.addEventListener('change', renderSelectPredictor);
+  selectPredictor.addEventListener('change', renderForecast);
+  updateButton.addEventListener('click', renderForecast)
+  dateFrom.addEventListener('keydown', (event) => {
+    if (event.key == 'Enter') {
+      renderForecast();
     }
-
-    var forecastConfig = {
-      type: "line",
-      data: forecastData,
-      options: {
-        scales: {
-          y: {
-              beginAtZero: false
-          }
-        },
-        elements: {
-          point: {
-            radius: 0
-          }
-        },
-        plugins: {
-          legend: {
-            display: true,
-            position: "bottom",
-            labels: {
-                boxHeight: 0
-            }
-          }
-        },
-      }
+    return;
+  })
+  dateTo.addEventListener('keydown', (event) => {
+    if (event.key == 'Enter') {
+      renderForecast();
     }
+    return;
+  })
 
-    const forecastCtx = document.getElementById("forecastChart").getContext("2d");
-    const forecastChart = new Chart(forecastCtx, forecastConfig);
-  </script>
-{% endblock %}
+  setDates();
+
+  renderSelectReservoir()
+    .then(() => renderSelectPredictor())
+    .then(() => renderForecast())
+</script>
 {% endblock %}

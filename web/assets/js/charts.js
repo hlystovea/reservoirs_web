@@ -1,4 +1,4 @@
-var chartOptions = {
+const chartOptions = {
   scales: {
     y: {
         beginAtZero: false
@@ -18,9 +18,9 @@ var chartOptions = {
       }
     }
   },
-}
+};
 
-var levelsData = {
+const levelsData = {
   labels: [],
   datasets: [{
     label: "УВБ, м",
@@ -30,15 +30,15 @@ var levelsData = {
     borderWidth: 1,
     fill: true,
   }]
-}
+};
 
-var levelsConfig = {
+const levelsConfig = {
   type: "line",
   data: levelsData,
   options: chartOptions
-}
+};
 
-var flowsData = {
+const flowsData = {
   labels: [],
   datasets: [{
     label: "Приток, м\u00B3/с",
@@ -72,15 +72,15 @@ var flowsData = {
     borderWidth: 1,
     fill: true,
   }]
-}
+};
 
-var flowsConfig = {
+const flowsConfig = {
   type: "line",
   data: flowsData,
   options: chartOptions
-}
+};
 
-var yearSummaryData = {
+const yearSummaryData = {
   labels: [],
   datasets: [{
     label: "Максимум притока, м\u00B3/с",
@@ -109,9 +109,9 @@ var yearSummaryData = {
     fill: true,
     yAxisID: 'y'
   }]
-}
+};
 
-var yearSummaryConfig = {
+const yearSummaryConfig = {
   type: "bar",
   data: yearSummaryData,
   options: {
@@ -145,7 +145,53 @@ var yearSummaryConfig = {
       }
     }
   }
-}
+};
+
+const forecastData = {
+  labels: [],
+  datasets: [{
+    label: "Прогноз притока, м\u00B3/с",
+    data: [],
+    backgroundColor: "rgba(255, 99, 132, 0.2)",
+    borderColor: "rgba(255, 99, 132, 1)",
+    borderWidth: 1,
+    fill: true,
+  },
+  {
+    label: "Фактический приток, м\u00B3/с",
+    data: [],
+    backgroundColor: "rgba(201, 203, 207, 0.2)",
+    borderColor: "rgba(201, 203, 207, 1)",
+    borderWidth: 1,
+    fill: true,
+  }]
+};
+
+const forecastConfig = {
+  type: "line",
+  data: forecastData,
+  options: {
+    scales: {
+      y: {
+          beginAtZero: false
+      }
+    },
+    elements: {
+      point: {
+        radius: 0
+      }
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: "bottom",
+        labels: {
+            boxHeight: 0
+        }
+      }
+    },
+  }
+};
 
 function setLevelsChart(chart, data) {
   chart.data.labels = data.dates;
@@ -167,5 +213,12 @@ function setYearSummaryChart(chart, data) {
   chart.data.datasets[0].data = data.max_inflows;
   chart.data.datasets[1].data = data.inflow_volumes;
   chart.data.datasets[2].data = data.spillway_volumes;
+  chart.update();
+}
+
+function setForecastChart(chart, data) {
+  chart.data.labels = data.dates;
+  chart.data.datasets[0].data = data.inflows;
+  chart.data.datasets[1].data = data.facts;
   chart.update();
 }
