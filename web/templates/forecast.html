@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-xl-center mt-3">
+  <div class="row">
+    <div class="col-lg-3 mt-3">
+      <p class="lead mb-3 mt-4">Выбрать данные:</p>
+      <div class="row g-3 pl-4 pr-4">
+        <div class="col-sm-12">
+          <label for="selectReservoir" class="form-label text-muted">Водохранилище</label>
+          <select id="selectReservoir" class="form-select p-1" name ="selectReservoir">
+          </select>
+        </div>
+        <div class="col-sm-12">
+          <label for="selectPredictor" class="form-label text-muted">Модель</label>
+          <select id="selectPredictor" class="form-select p-1" name ="selectPredictor">
+          </select>
+        </div>
+        <div class="col-sm-6">
+          <label for="dateFrom" class="form-label text-muted">Начало</label>
+          <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value="">
+        </div>
+        <div class="col-sm-6">
+          <label for="dateTo" class="form-label text-muted">Конец</label>
+          <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="col-sm-12 mt-4 mb-4">
+          <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-9 mt-3">
+      <div class="row justify-content-center">
+        <div class="row p-0">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const selectReservoir = document.getElementById('selectReservoir');
+  const selectPredictor = document.getElementById('selectPredictor');
+  const updateButton = document.getElementById('updateButton');
+  const dateFrom = document.getElementById('dateFrom');
+  const dateTo = document.getElementById('dateTo');
+
+  function setDates() {
+    let start = new Date();
+    let end = new Date();
+
+    start.setDate(start.getDate() - 90);
+    end.setDate(end.getDate() + 10);
+
+    dateFrom.value = start.toISOString().split('T')[0];
+    dateTo.value = end.toISOString().split('T')[0];
+  }
+
+  function optionElementTemplate(value, text, selected=false) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.innerText = text;
+    option.selected = (selected) ? true : false;
+    return option
+  }
+
+  async function renderSelectOptions(item, url, selectedValue='', field='name') {
+    await fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        let options = [];
+        if (!selectedValue) {
+          obj = data.shift();
+          options.push(optionElementTemplate(obj.id, obj[field], true));
+        }
+        data.forEach(obj => {
+          let selected = obj.id == selectedValue;
+          options.push(optionElementTemplate(obj.id, obj[field], selected));
+        });
+        item.replaceChildren(...options);
+      })
+      .catch(error => {
+        console.log('Error: ', error);
+      });
+  }
+
+  async function renderSelectReservoir() {
+    const url = `{% url "reservoirs:reservoir-list" %}?has_predictors=true`;
+    await renderSelectOptions(selectReservoir, url);
+  }
+
+  async function renderSelectPredictor() {
+    reservoir_pk = selectReservoir.value;
+    const url = `{% url "predictors:predictor-list" %}?reservoir=${reservoir_pk}`;
+    await renderSelectOptions(selectPredictor, url);
+  }
+
+  async function renderForecast() {
+    const predictor_pk = selectPredictor.value;
+    const start = dateFrom.value;
+    const end = dateTo.value;
+    const url = `/api/v1/predictors/${predictor_pk}/forecast/?start=${start}&end=${end}`;
+    await fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        data = formatForecastToArray(data);
+        setForecastChart(forecastChart, data);
+      })
+      .catch(error => {
+        console.log('Error: ', error);
+      });
+  };
+
+  const forecastCtx = document.getElementById('forecastChart').getContext('2d');
+  const forecastChart = new Chart(forecastCtx, forecastConfig);
+
+  selectReservoir.addEventListener('change', renderSelectPredictor);
+  selectPredictor.addEventListener('change', renderForecast);
+  updateButton.addEventListener('click', renderForecast)
+  dateFrom.addEventListener('keydown', (event) => {
+    if (event.key == 'Enter') {
+      renderForecast();
+    }
+    return;
+  })
+  dateTo.addEventListener('keydown', (event) => {
+    if (event.key == 'Enter') {
+      renderForecast();
+    }
+    return;
+  })
+
+  setDates();
+
+  renderSelectReservoir()
+    .then(() => renderSelectPredictor())
+    .then(() => renderForecast())
+</script>
+{% endblock %}

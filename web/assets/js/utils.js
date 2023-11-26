@@ -81,6 +81,24 @@ function formatYearSummaryToArray(data) {
   };
 }
 
+function formatForecastToArray(data) {
+  let dates = [];
+  let inflows = [];
+  let facts = [];
+
+  data.forEach((item, index, array) => {
+    dates.push(item.date);
+    inflows.push(item.inflow);
+    facts.push(item.fact);
+  });
+
+  return {
+    dates: dates,
+    inflows: inflows,
+    facts: facts
+  };
+}
+
 // calc a volumes
 function calcVolumes(data) {
   let inflowVolume = 0;
