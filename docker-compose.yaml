@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:14
     container_name: reservoirs_db
-    restart: always
+    restart: unless-stopped
     volumes:
       - postgres:/var/lib/postgresql/data/
     env_file:
@@ -13,7 +13,7 @@ services:
   redis:
     image: redis:latest
     container_name: reservoirs_redis
-    restart: always
+    restart: unless-stopped
     command: redis-server
     volumes:
       - redis_data:/data
@@ -21,7 +21,7 @@ services:
   web:
     build: .
     container_name: reservoirs_web
-    restart: always
+    restart: unless-stopped
     command: gunicorn web.wsgi --bind 0.0.0.0:8000
     volumes:
       - static_value:/reservoirs_web/static/
@@ -35,7 +35,7 @@ services:
   celery:
     build: .
     container_name: reservoirs_celery
-    restart: always
+    restart: unless-stopped
     command: celery -A web worker -B -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - media_value:/reservoirs_web/media/
@@ -48,14 +48,14 @@ services:
     image: selenium/standalone-firefox
     container_name: reservoirs_selenium
     shm_size: 8gb
-    restart: always
+    restart: unless-stopped
     depends_on:
       - celery
 
   nginx:
     image: nginx:latest
     container_name: reservoirs_nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - '8000:8000'
     volumes:
