@@ -1,7 +1,7 @@
 from django.db.models import OuterRef, Subquery
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from predictors.filters import ForecastFilter, PredictorFilter
+from predictors.filters import ForecastFilter
 from predictors.models import WaterSituationForecast, WaterSituationPredictor
 from predictors.serializers import PredictorSerializer, ForecastSerializer
 from reservoirs.models import WaterSituation
@@ -10,7 +10,7 @@ from reservoirs.models import WaterSituation
 class PredictorsViewSet(ReadOnlyModelViewSet):
     serializer_class = PredictorSerializer
     queryset = WaterSituationPredictor.objects.all()
-    filterset_class = PredictorFilter
+    filterset_fields = ('reservoir', )
 
 
 class ForecastViewSet(ReadOnlyModelViewSet):
