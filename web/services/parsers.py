@@ -71,7 +71,7 @@ class KrasParser(AbstractParser):
         inflow_str = raw_data.find_all(string=re.compile('приток общий'))[0]
         spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[2]  # noqa(E501)
 
-        level = re.findall(r'[0-9]+,[0-9]+', level_str)[0]
+        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
         outflow = re.findall(r'[0-9]+', level_str)[-1]
         inflow = re.findall(r'[0-9]+', inflow_str)[0]
         spillway = re.findall(r'[0-9]+', spillway_str)[0]
@@ -117,7 +117,7 @@ class SayanParser(KrasParser):
         inflow_str = raw_data.find_all(string=re.compile('приток'))[0]
         spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[0]  # noqa(E501)
 
-        level = re.findall(r'[0-9]+,[0-9]+', level_str)[0]
+        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
         outflow = re.findall(r'[0-9]+', level_str)[-1]
         inflow = re.findall(r'[0-9]+', inflow_str)[0]
         spillway = re.findall(r'[0-9]+', spillway_str)[0]
