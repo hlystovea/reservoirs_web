@@ -106,8 +106,8 @@ class KrasParser(AbstractParser):
 
             return Situation(date=date, **normalized_values)
 
-        except (ValueError, AttributeError, ValidationError) as error:
-            logger.error(f'{cls.__name__} {repr(error)}')
+        except (ValueError, AttributeError, ValidationError, IndexError) as e:
+            logger.error(f'{cls.__name__} {repr(e)}')
 
 
 class SayanParser(KrasParser):
