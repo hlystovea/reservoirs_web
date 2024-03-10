@@ -1,261 +1,235 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="row justify-content-xl-center mt-3">
-  <div class="row px-4">
-    <div class="card shadow-sm">
-      <div class="card-body pt-1 pb-2">
-        <div class="row">
-          <div class="col-lg-3" id="statTitle">
-          </div>
-          <div class="col-lg-9">
-            <table class="table table-sm table-borderless mb-0">
-              <tbody id="statTableBody">
-                <tr id="statTableHead">
-                  <th></th>
-                  <th><small><span style='color:#ffc58c'>Уровень</th>
-                  <th><small><span style='color:#ffa1b5'>Приток</th>
-                  <th><small><span style='color:#86c7f3'>Сброс</th>
-                  <th><small><span style='color:#b894ff'>Холостой сброс</th>
-                </tr>
-                <tr id="statTableOffsets"></tr>
-                <tr id="statTableActual"></tr>
-                <tr id="statTableVolumes"></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+<div class="row justify-content-center">
+  <div class="col-lg-3 mt-3">
+    <div class="card shadow-sm mt-2">
+      <div class="card-header bg-white">
+        <p class='lead mb-0'>Морфометрия</p>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm table-borderless mb-0">
+          <tbody id="infoTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="lead mb-3 mt-4">Выбрать данные:</p>
+    <div class="row g-3 pl-4 pr-4">
+      <div class="col-sm-6">
+        <label for="dateFrom" class="form-label text-muted">Начало</label>
+        <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value={{ default_date }} min={{
+          earlist_date }} max="{% now 'Y-m-d' %}">
+      </div>
+      <div class="col-sm-6">
+        <label for="dateTo" class="form-label text-muted">Конец</label>
+        <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min={{
+          earlist_date }} max="{% now 'Y-m-d' %}">
+      </div>
+      <div class="col-sm-12">
+        <label for="selectReservoirs" class="form-label text-muted">Водохранилище</label>
+        <select id="selectReservoirs" class="form-select p-1" name="selectReservoirs"></select>
+      </div>
+      <div class="col-sm-12 mt-4 mb-4">
+        <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
       </div>
     </div>
   </div>
-  <div class="row">
-    <div class="col-lg-3 mt-3">
-      <div class="card shadow-sm mt-2">
-        <div class="card-header bg-white">
-          <p class='lead mb-0'>Морфометрия</p>
-        </div>
-        <div class="card-body">
-          <table class="table table-sm table-borderless mb-0">
-            <tbody id="infoTableBody"></tbody>
-          </table>
-        </div>
+  <div class="col-lg-9 mt-3">
+    <div class="row justify-content-center">
+      <div class="row p-0">
+        <canvas id="levelsChart"></canvas>
       </div>
-      <p class="lead mb-3 mt-4">Выбрать данные:</p>
-      <div class="row g-3 pl-4 pr-4">
-        <div class="col-sm-6">
-          <label for="dateFrom" class="form-label text-muted">Начало</label>
-          <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value={{ default_date }} min={{ earlist_date }} max="{% now 'Y-m-d' %}">
-        </div>
-        <div class="col-sm-6">
-          <label for="dateTo" class="form-label text-muted">Конец</label>
-          <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min={{ earlist_date }} max="{% now 'Y-m-d' %}">
-        </div>
-        <div class="col-sm-12">
-          <label for="selectReservoirs" class="form-label text-muted">Водохранилище</label>
-          <select id="selectReservoirs" class="form-select p-1" name ="selectReservoirs"></select>
-        </div>
-        <div class="col-sm-12 mt-4 mb-4">
-          <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
-        </div>
+      <div class="row p-0">
+        <canvas id="flowsChart"></canvas>
       </div>
-    </div>
-    <div class="col-lg-9 mt-3">
-      <div class="row justify-content-center">
-        <div class="row p-0">
-          <canvas id="levelsChart"></canvas>
-        </div>
-        <div class="row p-0">
-          <canvas id="flowsChart"></canvas>
-        </div>
-        <div class="row p-0">
-          <canvas id="yearSummaryChart"></canvas>
-        </div>
+      <div class="row p-0">
+        <canvas id="yearSummaryChart"></canvas>
       </div>
     </div>
   </div>
 </div>
 {% block jquery %}
-  <script>
-    var reservoirs = [];
-    // requesting a list of reservoirs
-    $.ajax({
-      url: "{% url 'reservoirs:reservoir-list' %}",
-      success: function(data) {
-        reservoirs = data;
-        $("#selectReservoirs option").remove();
-        for (var i in data)
-          $("#selectReservoirs").append("<option id=" + data[i].slug + " val=" + data[i].slug + ">" + data[i].name + "</option>");
-        let slug = getCookie('reservoir');
-        if (slug !== undefined) {
-          document.getElementById(slug).selected = "true";
-        }
-        updateContent();
-      },          
-      error: function(error_data) {
-        console.log(error_data)
+<script>
+  var reservoirs = [];
+  // requesting a list of reservoirs
+  $.ajax({
+    url: "{% url 'reservoirs:reservoir-list' %}",
+    success: function (data) {
+      reservoirs = data;
+      $("#selectReservoirs option").remove();
+      for (var i in data)
+        $("#selectReservoirs").append("<option id=" + data[i].slug + " val=" + data[i].slug + ">" + data[i].name + "</option>");
+      let slug = getCookie('reservoir');
+      if (slug !== undefined) {
+        document.getElementById(slug).selected = "true";
+      }
+      updateContent();
+    },
+    error: function (error_data) {
+      console.log(error_data)
+    }
+  });
+
+  // updating content by change the select
+  $(document).ready(function () {
+    $("#selectReservoirs").change(function () {
+      updateContent();
+    });
+  });
+
+  // updating content by click the button
+  $(document).ready(function () {
+    $("#updateButton").click(function () {
+      updateContent();
+    });
+  });
+
+  // updating content by press Enter in dateFrom form
+  $(document).ready(function () {
+    $("#dateFrom").bind("keydown", function (event) {
+      var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
+      if (keycode == 13) {
+        document.getElementById('updateButton').click();
+        return false;
+      } else {
+        return true;
       }
     });
+  });
 
-    // updating content by change the select
-    $(document).ready(function() {
-      $("#selectReservoirs").change(function() {
-        updateContent();
-      });
+  // updating content by press Enter in dateTo form
+  $(document).ready(function () {
+    $("#dateTo").bind("keydown", function (event) {
+      var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
+      if (keycode == 13) {
+        document.getElementById('updateButton').click();
+        return false;
+      } else {
+        return true;
+      }
     });
+  });
 
-    // updating content by click the button
-    $(document).ready(function() {
-      $("#updateButton").click(function() {
-        updateContent();
-      });
+  function updateContent() {
+    let slug = $("#selectReservoirs").find("option:selected").attr('val');
+    let reservoir = getObjectBySlug(reservoirs, slug);
+    let start = $("#dateFrom").val();
+    let end = $("#dateTo").val();
+
+    setInfo(reservoir);
+    getStat(reservoir);
+    getSituations(reservoir, start, end);
+    getYearSummary(reservoir);
+  };
+
+  // gets water situation data
+  function getSituations(reservoir, start, end) {
+    let url = reservoir.water_situations + "?";
+    if (start !== null) url = url + "&start=" + start;
+    if (end !== null) url = url + "&end=" + end;
+    $.ajax({
+      method: "GET",
+      url: url,
+      success: function (data) {
+        data = formatSituationsToArray(data);
+        setLevelsChart(levelsChart, data);
+        setFlowsChart(flowsChart, data);
+        setVolumes(calcVolumes(data));
+        setCookie("reservoir", reservoir.slug);
+      },
+      error: function (error_data) {
+        console.log(error_data);
+      }
     });
+  };
 
-    // updating content by press Enter in dateFrom form
-    $(document).ready(function() {
-      $("#dateFrom").bind("keydown", function(event) {
-        var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
-        if (keycode == 13) {
-          document.getElementById('updateButton').click();
-          return false;
-        } else {
-          return true;
-        }
-      });
+  // gets water situation data
+  function getYearSummary(reservoir) {
+    $.ajax({
+      method: "GET",
+      url: reservoir.year_summary,
+      success: function (data) {
+        data = formatYearSummaryToArray(data);
+        setYearSummaryChart(yearSummaryChart, data);
+      },
+      error: function (error_data) {
+        console.log(error_data);
+      }
     });
+  };
 
-    // updating content by press Enter in dateTo form
-    $(document).ready(function() {
-      $("#dateTo").bind("keydown", function(event) {
-        var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
-        if (keycode == 13) {
-          document.getElementById('updateButton').click();
-          return false;
-        } else {
-          return true;
-        }
-      });
-    });
-
-    function updateContent() {
-      let slug  = $("#selectReservoirs").find("option:selected").attr('val');
-      let reservoir = getObjectBySlug(reservoirs, slug);
-      let start = $("#dateFrom").val();
-      let end = $("#dateTo").val();
-
-      setInfo(reservoir);
-      getStat(reservoir);
-      getSituations(reservoir, start, end);
-      getYearSummary(reservoir);
-    };
-
-    // gets water situation data
-    function getSituations(reservoir, start, end) {
-      let url = reservoir.water_situations + "?";
-      if (start !== null) url = url + "&start=" + start;
-      if (end !== null) url = url + "&end=" + end;
-      $.ajax({
-        method: "GET",
-        url: url,
-        success: function(data) {
-          data = formatSituationsToArray(data);
-          setLevelsChart(levelsChart, data);
-          setFlowsChart(flowsChart, data);
-          setVolumes(calcVolumes(data));
-          setCookie("reservoir", reservoir.slug);
-        },
-        error: function(error_data) {
-          console.log(error_data);
-        }
-      });
-    };
-
-    // gets water situation data
-    function getYearSummary(reservoir) {
-      $.ajax({
-        method: "GET",
-        url: reservoir.year_summary,
-        success: function(data) {
-          data = formatYearSummaryToArray(data);
-          setYearSummaryChart(yearSummaryChart, data);
-        },
-        error: function(error_data) {
-          console.log(error_data);
-        }
-      });
-    };
-
-    // gets actual statistics
-    function getStat(reservoir) {
-      $.ajax({
-        method: "GET",
-        url: reservoir.actual_situation,
-        success: function(data) {
+  // gets actual statistics
+  function getStat(reservoir) {
+    $.ajax({
+      method: "GET",
+      url: reservoir.actual_situation,
+      success: function (data) {
         setStat(reservoir, data);
-        },
-        error: function(error_data) {
-          console.log(error_data);
-          $("#statTitle p").remove();
-          $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
-          $("#statTitle").append("<p class='text-muted mt-1'>Ошибка загрузки данных</p>");
-        }
-      });
-    };
+      },
+      error: function (error_data) {
+        console.log(error_data);
+        $("#statTitle p").remove();
+        $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
+        $("#statTitle").append("<p class='text-muted mt-1'>Ошибка загрузки данных</p>");
+      }
+    });
+  };
 
-    // sets the info card
-    function setInfo(reservoir) {
-      $("#infoTableBody tr").remove();
-      if (reservoir.force_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>")};
-      if (reservoir.normal_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>")};
-      if (reservoir.dead_level !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>")};
-      if (reservoir.full_volume !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Полный объём</td><td>" + reservoir.full_volume + " км\u00B3</td></tr>")};
-      if (reservoir.useful_volume !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>")};
-      if (reservoir.area !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>")};
-      if (reservoir.max_depth !== null) {$("#infoTableBody").append("<tr class='text-muted'><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>")};
-    };
+  // sets the info card
+  function setInfo(reservoir) {
+    $("#infoTableBody tr").remove();
+    if (reservoir.force_level !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>") };
+    if (reservoir.normal_level !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>") };
+    if (reservoir.dead_level !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>") };
+    if (reservoir.full_volume !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Полный объём</td><td>" + reservoir.full_volume + " км\u00B3</td></tr>") };
+    if (reservoir.useful_volume !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>") };
+    if (reservoir.area !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>") };
+    if (reservoir.max_depth !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>") };
+  };
 
-    // sets the statistics card
-    function setStat(reservoir, data) {
-      const actualDate = (new Date(data.date)).toLocaleDateString('ru', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+  // sets the statistics card
+  function setStat(reservoir, data) {
+    const actualDate = (new Date(data.date)).toLocaleDateString('ru', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
 
-      $("#statTitle p").remove();
-      $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
-      $("#statTitle").append("<p class='text-muted mt-1'>по состоянию на " + actualDate + "</p>");
+    $("#statTitle p").remove();
+    $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
+    $("#statTitle").append("<p class='text-muted mt-1'>по состоянию на " + actualDate + "</p>");
 
-      $("#statTableActual td").remove();
-      $("#statTableActual").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Актуальные значения</td>");
-      $("#statTableActual").append("<td><h5><span style='color:#ffc58c'>" + data.level + " м</td>");
-      $("#statTableActual").append("<td><h5><span style='color:#ffa1b5'>" + data.inflow + " м\u00B3/с</td>");
-      $("#statTableActual").append("<td><h5><span style='color:#86c7f3'>" + data.outflow + " м\u00B3/с</td>");
-      $("#statTableActual").append("<td><h5><span style='color:#b894ff'>" + data.spillway + " м\u00B3/с</td>");
+    $("#statTableActual td").remove();
+    $("#statTableActual").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Актуальные значения</td>");
+    $("#statTableActual").append("<td><h5><span style='color:#ffc58c'>" + data.level + " м</td>");
+    $("#statTableActual").append("<td><h5><span style='color:#ffa1b5'>" + data.inflow + " м\u00B3/с</td>");
+    $("#statTableActual").append("<td><h5><span style='color:#86c7f3'>" + data.outflow + " м\u00B3/с</td>");
+    $("#statTableActual").append("<td><h5><span style='color:#b894ff'>" + data.spillway + " м\u00B3/с</td>");
 
-      $("#statTableOffsets td").remove();
-      $("#statTableOffsets").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Изменения за сутки</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.level_offset + " м</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.inflow_offset + " м\u00B3/с</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.outflow_offset + " м\u00B3/с</td>");
-      $("#statTableOffsets").append("<td><small class='text-muted'>" + data.spillway_offset + " м\u00B3/с</td>");
-    };
+    $("#statTableOffsets td").remove();
+    $("#statTableOffsets").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Изменения за сутки</td>");
+    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.level_offset + " м</td>");
+    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.inflow_offset + " м\u00B3/с</td>");
+    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.outflow_offset + " м\u00B3/с</td>");
+    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.spillway_offset + " м\u00B3/с</td>");
+  };
 
-    // sets a volumes row
-    function setVolumes(volumes) {
-      $("#statTableVolumes td").remove();
-      $("#statTableVolumes").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
-      $("#statTableVolumes").append("<td></td>");
-      $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.inflow + " км\u00B3</td>");
-      $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.outflow + " км\u00B3</td>");
-      $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.spillway + " км\u00B3</td>");
-    };
+  // sets a volumes row
+  function setVolumes(volumes) {
+    $("#statTableVolumes td").remove();
+    $("#statTableVolumes").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
+    $("#statTableVolumes").append("<td></td>");
+    $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.inflow + " км\u00B3</td>");
+    $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.outflow + " км\u00B3</td>");
+    $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.spillway + " км\u00B3</td>");
+  };
 
-    const flowsCtx = document.getElementById("flowsChart").getContext("2d");
-    const levelsCtx = document.getElementById("levelsChart").getContext("2d");
-    const yearSummaryCtx = document.getElementById("yearSummaryChart").getContext("2d");
+  const flowsCtx = document.getElementById("flowsChart").getContext("2d");
+  const levelsCtx = document.getElementById("levelsChart").getContext("2d");
+  const yearSummaryCtx = document.getElementById("yearSummaryChart").getContext("2d");
 
-    const levelsChart = new Chart(levelsCtx, levelsConfig);
-    const flowsChart = new Chart(flowsCtx, flowsConfig);
-    const yearSummaryChart = new Chart(yearSummaryCtx, yearSummaryConfig);
-  </script>
+  const levelsChart = new Chart(levelsCtx, levelsConfig);
+  const flowsChart = new Chart(flowsCtx, flowsConfig);
+  const yearSummaryChart = new Chart(yearSummaryCtx, yearSummaryConfig);
+</script>
 {% endblock %}
 {% endblock %}
