@@ -36,11 +36,34 @@
   </div>
 </div>
 <script>
+  var reservoirs = [];
+  var predictors = [];
   const selectReservoir = document.getElementById('selectReservoir');
   const selectPredictor = document.getElementById('selectPredictor');
   const updateButton = document.getElementById('updateButton');
   const dateFrom = document.getElementById('dateFrom');
   const dateTo = document.getElementById('dateTo');
+
+  async function getReservoirs() {
+    const url = `{% url "reservoirs:reservoir-list" %}?has_predictors=true`;
+    await fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        reservoirs = data;
+      })
+      .catch(error => console.error('Error:', error));
+  }
+
+  async function getPredictors() {
+    reservoir_id = selectReservoir.value;
+    const url = `{% url "predictors:predictor-list" %}?reservoir=${reservoir_id}`;
+    await fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        predictors = data;
+      })
+      .catch(error => console.error('Error:', error));
+  }
 
   function setDates() {
     let start = new Date();
@@ -61,35 +84,29 @@
     return option
   }
 
-  async function renderSelectOptions(item, url, selectedValue = '', field = 'name') {
-    await fetch(url)
-      .then(r => r.json())
-      .then(data => {
-        let options = [];
-        if (!selectedValue) {
-          obj = data.shift();
-          options.push(optionElementTemplate(obj.id, obj[field], true));
-        }
-        data.forEach(obj => {
-          let selected = obj.id == selectedValue;
-          options.push(optionElementTemplate(obj.id, obj[field], selected));
-        });
-        item.replaceChildren(...options);
-      })
-      .catch(error => {
-        console.log('Error: ', error);
-      });
+  function renderSelectOptions(target, data, selectedValue = '', field = 'name') {
+    if (!data) {
+      console.log('Error: empty data');
+      return;
+    }
+    let options = [];
+    if (!selectedValue) {
+      obj = data.shift();
+      options.push(optionElementTemplate(obj.id, obj[field], true));
+    }
+    data.forEach(obj => {
+      let selected = obj.id == selectedValue;
+      options.push(optionElementTemplate(obj.id, obj[field], selected));
+    });
+    target.replaceChildren(...options);
   }
 
-  async function renderSelectReservoir() {
-    const url = `{% url "reservoirs:reservoir-list" %}?has_predictors=true`;
-    await renderSelectOptions(selectReservoir, url);
+  function renderSelectReservoir() {
+    renderSelectOptions(selectReservoir, reservoirs);
   }
 
-  async function renderSelectPredictor() {
-    reservoir_pk = selectReservoir.value;
-    const url = `{% url "predictors:predictor-list" %}?reservoir=${reservoir_pk}`;
-    await renderSelectOptions(selectPredictor, url);
+  function renderSelectPredictor() {
+    renderSelectOptions(selectPredictor, predictors);
   }
 
   async function renderForecast() {
@@ -111,7 +128,7 @@
   const forecastCtx = document.getElementById('forecastChart').getContext('2d');
   const forecastChart = new Chart(forecastCtx, forecastConfig);
 
-  selectReservoir.addEventListener('change', renderSelectPredictor);
+  selectReservoir.addEventListener('change', () => getPredictors().then(() => renderSelectPredictor));
   selectPredictor.addEventListener('change', renderForecast);
   updateButton.addEventListener('click', renderForecast)
   dateFrom.addEventListener('keydown', (event) => {
@@ -129,8 +146,14 @@
 
   setDates();
 
-  renderSelectReservoir()
+  getReservoirs()
+    .then(() => renderSelectReservoir())
+    .then(() => updateStat())
+    .then(() => getPredictors())
     .then(() => renderSelectPredictor())
     .then(() => renderForecast())
+    .catch( error => {
+      console.log('Error: ', error);
+    })
 </script>
 {% endblock %}

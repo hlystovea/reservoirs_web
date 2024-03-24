@@ -116,7 +116,7 @@
     let end = $("#dateTo").val();
 
     setInfo(reservoir);
-    getStat(reservoir);
+    updateStat(reservoir);
     getSituations(reservoir, start, end);
     getYearSummary(reservoir);
   };
@@ -157,23 +157,6 @@
     });
   };
 
-  // gets actual statistics
-  function getStat(reservoir) {
-    $.ajax({
-      method: "GET",
-      url: reservoir.actual_situation,
-      success: function (data) {
-        setStat(reservoir, data);
-      },
-      error: function (error_data) {
-        console.log(error_data);
-        $("#statTitle p").remove();
-        $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
-        $("#statTitle").append("<p class='text-muted mt-1'>Ошибка загрузки данных</p>");
-      }
-    });
-  };
-
   // sets the info card
   function setInfo(reservoir) {
     $("#infoTableBody tr").remove();
@@ -184,33 +167,6 @@
     if (reservoir.useful_volume !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>") };
     if (reservoir.area !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>") };
     if (reservoir.max_depth !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>") };
-  };
-
-  // sets the statistics card
-  function setStat(reservoir, data) {
-    const actualDate = (new Date(data.date)).toLocaleDateString('ru', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    $("#statTitle p").remove();
-    $("#statTitle").append("<p class='lead mt-2 mb-0'><strong>" + reservoir.name + " водохранилище</strong></p>");
-    $("#statTitle").append("<p class='text-muted mt-1'>по состоянию на " + actualDate + "</p>");
-
-    $("#statTableActual td").remove();
-    $("#statTableActual").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Актуальные значения</td>");
-    $("#statTableActual").append("<td><h5><span style='color:#ffc58c'>" + data.level + " м</td>");
-    $("#statTableActual").append("<td><h5><span style='color:#ffa1b5'>" + data.inflow + " м\u00B3/с</td>");
-    $("#statTableActual").append("<td><h5><span style='color:#86c7f3'>" + data.outflow + " м\u00B3/с</td>");
-    $("#statTableActual").append("<td><h5><span style='color:#b894ff'>" + data.spillway + " м\u00B3/с</td>");
-
-    $("#statTableOffsets td").remove();
-    $("#statTableOffsets").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Изменения за сутки</td>");
-    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.level_offset + " м</td>");
-    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.inflow_offset + " м\u00B3/с</td>");
-    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.outflow_offset + " м\u00B3/с</td>");
-    $("#statTableOffsets").append("<td><small class='text-muted'>" + data.spillway_offset + " м\u00B3/с</td>");
   };
 
   // sets a volumes row
