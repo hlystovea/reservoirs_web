@@ -115,7 +115,7 @@
     let start = $("#dateFrom").val();
     let end = $("#dateTo").val();
 
-    setInfo(reservoir);
+    renderInfo(reservoir);
     updateStat(reservoir);
     getSituations(reservoir, start, end);
     getYearSummary(reservoir);
@@ -133,7 +133,7 @@
         data = formatSituationsToArray(data);
         setLevelsChart(levelsChart, data);
         setFlowsChart(flowsChart, data);
-        setVolumes(calcVolumes(data));
+        renderVolumes(calcVolumes(data));
         setCookie("reservoir", reservoir.slug);
       },
       error: function (error_data) {
@@ -157,26 +157,20 @@
     });
   };
 
-  // sets the info card
-  function setInfo(reservoir) {
-    $("#infoTableBody tr").remove();
-    if (reservoir.force_level !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>ФПУ</td><td>" + reservoir.force_level + " м</td></tr>") };
-    if (reservoir.normal_level !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>НПУ</td><td>" + reservoir.normal_level + " м</td></tr>") };
-    if (reservoir.dead_level !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>УМО</td><td>" + reservoir.dead_level + " м</td></tr>") };
-    if (reservoir.full_volume !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Полный объём</td><td>" + reservoir.full_volume + " км\u00B3</td></tr>") };
-    if (reservoir.useful_volume !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Полезный объём</td><td>" + reservoir.useful_volume + " км\u00B3</td></tr>") };
-    if (reservoir.area !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Площадь</td><td>" + reservoir.area + " км\u00B2</td></tr>") };
-    if (reservoir.max_depth !== null) { $("#infoTableBody").append("<tr class='text-muted'><td>Макс. глубина</td><td>" + reservoir.max_depth + " м</td></tr>") };
-  };
+  // Render the info card
+  const renderInfo = function(reservoir) {
+    const infoTableBody = document.querySelector('#infoTableBody');
+    let newInnerHTML = '';
+  
+    if (reservoir.force_level !== null) { newInnerHTML += `<tr class='text-muted'><td>ФПУ</td><td>${reservoir.force_level} м</td></tr>` };
+    if (reservoir.normal_level !== null) { newInnerHTML += `<tr class='text-muted'><td>НПУ</td><td>${reservoir.normal_level} м</td></tr>` };
+    if (reservoir.dead_level !== null) { newInnerHTML += `<tr class='text-muted'><td>УМО</td><td>${reservoir.dead_level} м</td></tr>` };
+    if (reservoir.full_volume !== null) { newInnerHTML += `<tr class='text-muted'><td>Полный объём</td><td>${reservoir.full_volume} км<sup>3</sup></td></tr>` };
+    if (reservoir.useful_volume !== null) { newInnerHTML += `<tr class='text-muted'><td>Полезный объём</td><td>${reservoir.useful_volume} км<sup>3</sup></td></tr>` };
+    if (reservoir.area !== null) { newInnerHTML += `<tr class='text-muted'><td>Площадь</td><td>${reservoir.area} км<sup>2</sup></td></tr>` };
+    if (reservoir.max_depth !== null) { newInnerHTML += `<tr class='text-muted'><td>Макс. глубина</td><td>${reservoir.max_depth} м</td></tr>` };
 
-  // sets a volumes row
-  function setVolumes(volumes) {
-    $("#statTableVolumes td").remove();
-    $("#statTableVolumes").append("<td align='end' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>");
-    $("#statTableVolumes").append("<td></td>");
-    $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.inflow + " км\u00B3</td>");
-    $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.outflow + " км\u00B3</td>");
-    $("#statTableVolumes").append("<td><small class='text-muted'>" + volumes.spillway + " км\u00B3</td>");
+    infoTableBody.innerHTML = newInnerHTML;
   };
 
   const flowsCtx = document.getElementById("flowsChart").getContext("2d");
