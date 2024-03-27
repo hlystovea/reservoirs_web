@@ -118,7 +118,7 @@
     renderInfo(reservoir);
     updateStat(reservoir);
     getSituations(reservoir, start, end);
-    getYearSummary(reservoir);
+    updateYearSummary(reservoir);
   };
 
   // gets water situation data
@@ -142,19 +142,17 @@
     });
   };
 
-  // gets water situation data
-  function getYearSummary(reservoir) {
-    $.ajax({
-      method: "GET",
-      url: reservoir.year_summary,
-      success: function (data) {
+  // Update year summary chart
+  async function updateYearSummary(reservoir) {
+    await fetch(reservoir.year_summary)
+      .then(response => response.json())
+      .then(data => {
         data = formatYearSummaryToArray(data);
         setYearSummaryChart(yearSummaryChart, data);
-      },
-      error: function (error_data) {
-        console.log(error_data);
-      }
-    });
+      })
+      .catch(error => {
+        console.log('Error: ', error);
+      });
   };
 
   // Render the info card
