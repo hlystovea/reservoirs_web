@@ -14,6 +14,10 @@
     </div>
     <p class="lead mb-3 mt-4">Выбрать данные:</p>
     <div class="row g-3 pl-4 pr-4">
+      <div class="col-sm-12">
+        <label for="selectReservoir" class="form-label text-muted">Водохранилище</label>
+        <select id="selectReservoir" class="form-select p-1" name="selectReservoir"></select>
+      </div>
       <div class="col-sm-6">
         <label for="dateFrom" class="form-label text-muted">Начало</label>
         <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value={{ default_date }} min={{
@@ -23,10 +27,6 @@
         <label for="dateTo" class="form-label text-muted">Конец</label>
         <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}" min={{
           earlist_date }} max="{% now 'Y-m-d' %}">
-      </div>
-      <div class="col-sm-12">
-        <label for="selectReservoir" class="form-label text-muted">Водохранилище</label>
-        <select id="selectReservoir" class="form-select p-1" name="selectReservoir"></select>
       </div>
       <div class="col-sm-12 mt-4 mb-4">
         <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
