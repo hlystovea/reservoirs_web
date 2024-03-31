@@ -80,11 +80,11 @@
   };
 
   // Call onLoad after loading the html code
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', () => {
     onLoad();
   });
 
-  // Update content onLoad
+  // Call updateRservoirs and then updateContent
   async function onLoad() {
     await updateReservoirs()
     .then(() => {
@@ -96,6 +96,7 @@
     });
   };
 
+  // Render selectReservoirs input
   const renderSelectReservoirs = function(reservoirs) {
     let newInnerHTML = '';
     for (const i in reservoirs) {
@@ -118,6 +119,7 @@
     });
   };
 
+  // Update content
   async function updateContent() {
     let slug = selectReservoirs.options[selectReservoirs.selectedIndex].value
     let reservoir = getObjectBySlug(reservoirs, slug);
@@ -163,12 +165,12 @@
   };
 
   // Render a row of the info card
-  const renderTr = function (name, value, units) {
+  const renderTr = function(name, value, units) {
     return `<tr class='text-muted'><td>${name}</td><td>${value} ${units}</td></tr>`
   }
 
   // Render the info card
-  const renderInfo = function (reservoir) {
+  const renderInfo = function(reservoir) {
     const infoTableBody = document.querySelector('#infoTableBody');
     let newInnerHTML = '';
 
