@@ -123,3 +123,36 @@ function calcVolumes(data) {
     avgInflow: avgInflowsVolume.toFixed(2)
   };
 }
+
+// Render selectReservoir input
+const renderSelectReservoir = function (reservoirs) {
+  let newInnerHTML = '';
+  for (const i in reservoirs) {
+    newInnerHTML += `<option id=${reservoirs[i].slug} value=${reservoirs[i].slug}>${reservoirs[i].name}</option>`;
+  }
+  selectReservoir.innerHTML = newInnerHTML;
+};
+
+// Render selectPredictor input
+const renderSelectPredictor = function (predictors) {
+  let newInnerHTML = '';
+  for (const i in predictors) {
+    newInnerHTML += `<option value=${predictors[i].id}>${predictors[i].name}</option>`;
+  }
+  selectPredictor.innerHTML = newInnerHTML;
+};
+
+// Update reservoirs select
+async function updateReservoirs(has_predictors = false) {
+  let url = '/api/v1/reservoirs/';
+  if (has_predictors) {
+    url += '?has_predictors=true';
+  };
+  await fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      reservoirs = data;
+      renderSelectReservoir(data);
+    })
+    .catch(error => console.error('Error:', error));
+};
