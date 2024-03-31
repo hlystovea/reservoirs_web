@@ -16,11 +16,11 @@
       </div>
       <div class="col-sm-6">
         <label for="dateFrom" class="form-label text-muted">Начало</label>
-        <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom" value="">
+        <input type="date" id="dateFrom" class="form-control p-1" name="dateFrom">
       </div>
       <div class="col-sm-6">
         <label for="dateTo" class="form-label text-muted">Конец</label>
-        <input type="date" id="dateTo" class="form-control p-1" name="dateTo" value="{% now 'Y-m-d' %}">
+        <input type="date" id="dateTo" class="form-control p-1" name="dateTo">
       </div>
       <div class="col-sm-12 mt-4 mb-4">
         <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
@@ -35,37 +35,50 @@
     </div>
   </div>
 </div>
+
 <script>
   var reservoirs = [];
-  var predictors = [];
   const selectReservoir = document.getElementById('selectReservoir');
   const selectPredictor = document.getElementById('selectPredictor');
   const updateButton = document.getElementById('updateButton');
   const dateFrom = document.getElementById('dateFrom');
   const dateTo = document.getElementById('dateTo');
 
-  async function getReservoirs() {
-    const url = `{% url "reservoirs:reservoir-list" %}?has_predictors=true`;
-    await fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        reservoirs = data;
-      })
-      .catch(error => console.error('Error:', error));
-  }
+  // Update predictors by change the selectReservoir
+  selectReservoir.onchange = () => {
+    updatePredictors();
+  };
 
-  async function getPredictors() {
-    reservoir_id = selectReservoir.value;
-    const url = `{% url "predictors:predictor-list" %}?reservoir=${reservoir_id}`;
-    await fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        predictors = data;
-      })
-      .catch(error => console.error('Error:', error));
-  }
+  // Update content by change the selectPredictors
+  selectPredictor.onchange = () => {
+    updateContent();
+  };
 
-  function setDates() {
+  // Update content by click the button
+  updateButton.onclick = () => {
+    updateContent();
+  };
+
+  // Update content by press Enter in dateFrom input
+  dateFrom.onkeydown = function (event) {
+    if (event.key == 'Enter') {
+      updateContent();
+    }
+  };
+
+  // Update content by press Enter in dateTo input
+  dateTo.onkeydown = function (event) {
+    if (event.key == 'Enter') {
+      updateContent();
+    }
+  };
+
+  // Call onLoad after loading the html code
+  document.addEventListener('DOMContentLoaded', () => {
+    onLoad();
+  });
+
+  const setDates = function () {
     let start = new Date();
     let end = new Date();
 
@@ -74,42 +87,29 @@
 
     dateFrom.value = start.toISOString().split('T')[0];
     dateTo.value = end.toISOString().split('T')[0];
-  }
+  };
 
-  function optionElementTemplate(value, text, selected = false) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.innerText = text;
-    option.selected = (selected) ? true : false;
-    return option
-  }
+  // Call updateRservoirs and then updateContent
+  async function onLoad() {
+    setDates();
+    await updateReservoirs(has_predictors=true)
+      .then(updatePredictors)
+      .then(updateContent)
+  };
 
-  function renderSelectOptions(target, data, selectedValue = '', field = 'name') {
-    if (!data) {
-      console.log('Error: empty data');
-      return;
-    }
-    let options = [];
-    if (!selectedValue) {
-      obj = data.shift();
-      options.push(optionElementTemplate(obj.id, obj[field], true));
-    }
-    data.forEach(obj => {
-      let selected = obj.id == selectedValue;
-      options.push(optionElementTemplate(obj.id, obj[field], selected));
-    });
-    target.replaceChildren(...options);
-  }
+  // Update predictors select
+  async function updatePredictors() {
+    reservoir_slug = selectReservoir.value;
+    const url = `{% url "predictors:predictor-list" %}?reservoir=${reservoir_slug}`;
+    await fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        renderSelectPredictor(data);
+      })
+      .catch(error => console.error('Error: ', error));
+  };
 
-  function renderSelectReservoir() {
-    renderSelectOptions(selectReservoir, reservoirs);
-  }
-
-  function renderSelectPredictor() {
-    renderSelectOptions(selectPredictor, predictors);
-  }
-
-  async function renderForecast() {
+  async function updateForecast() {
     const predictor_pk = selectPredictor.value;
     const start = dateFrom.value;
     const end = dateTo.value;
@@ -120,40 +120,18 @@
         data = formatForecastToArray(data);
         setForecastChart(forecastChart, data);
       })
-      .catch(error => {
-        console.log('Error: ', error);
-      });
+      .catch(error => console.log('Error: ', error));
   };
 
+  // Update content
+  async function updateContent() {
+    const reservoir_slug = selectReservoir.options[selectReservoir.selectedIndex].value
+    const reservoir = getObjectBySlug(reservoirs, reservoir_slug);
+    updateStat(reservoir);
+    updateForecast();
+  };
+  
   const forecastCtx = document.getElementById('forecastChart').getContext('2d');
   const forecastChart = new Chart(forecastCtx, forecastConfig);
-
-  selectReservoir.addEventListener('change', () => getPredictors().then(() => renderSelectPredictor));
-  selectPredictor.addEventListener('change', renderForecast);
-  updateButton.addEventListener('click', renderForecast)
-  dateFrom.addEventListener('keydown', (event) => {
-    if (event.key == 'Enter') {
-      renderForecast();
-    }
-    return;
-  })
-  dateTo.addEventListener('keydown', (event) => {
-    if (event.key == 'Enter') {
-      renderForecast();
-    }
-    return;
-  })
-
-  setDates();
-
-  getReservoirs()
-    .then(() => renderSelectReservoir())
-    .then(() => updateStat())
-    .then(() => getPredictors())
-    .then(() => renderSelectPredictor())
-    .then(() => renderForecast())
-    .catch( error => {
-      console.log('Error: ', error);
-    })
 </script>
 {% endblock %}

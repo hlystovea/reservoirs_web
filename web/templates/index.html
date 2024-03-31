@@ -25,8 +25,8 @@
           earlist_date }} max="{% now 'Y-m-d' %}">
       </div>
       <div class="col-sm-12">
-        <label for="selectReservoirs" class="form-label text-muted">Водохранилище</label>
-        <select id="selectReservoirs" class="form-select p-1" name="selectReservoirs"></select>
+        <label for="selectReservoir" class="form-label text-muted">Водохранилище</label>
+        <select id="selectReservoir" class="form-select p-1" name="selectReservoir"></select>
       </div>
       <div class="col-sm-12 mt-4 mb-4">
         <button id="updateButton" type="button" class="btn btn-secondary btn-block pb-1 pt-1">Показать</button>
@@ -52,7 +52,7 @@
   var reservoirs = [];
   const dateFrom = document.getElementById('dateFrom');
   const dateTo = document.getElementById('dateTo');
-  const selectReservoirs = document.getElementById('selectReservoirs');
+  const selectReservoir = document.getElementById('selectReservoir');
   const updateButton = document.getElementById('updateButton');
 
   // Update content by click the button
@@ -61,7 +61,7 @@
   };
 
   // Update content by change the select
-  selectReservoirs.onchange = () => {
+  selectReservoir.onchange = () => {
     updateContent();
   };
 
@@ -96,32 +96,9 @@
     });
   };
 
-  // Render selectReservoirs input
-  const renderSelectReservoirs = function(reservoirs) {
-    let newInnerHTML = '';
-    for (const i in reservoirs) {
-      newInnerHTML += `<option id=${reservoirs[i].slug} value=${reservoirs[i].slug}>${reservoirs[i].name}</option>`;
-    }
-    selectReservoirs.innerHTML = newInnerHTML;
-  };
-
-  // Update reservoirs select
-  async function updateReservoirs() {
-    const url = "{% url 'reservoirs:reservoir-list' %}";
-    await fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      reservoirs = data;
-      renderSelectReservoirs(data);
-    })
-    .catch(error => {
-      console.log('Error: ', error);
-    });
-  };
-
   // Update content
   async function updateContent() {
-    let slug = selectReservoirs.options[selectReservoirs.selectedIndex].value
+    let slug = selectReservoir.options[selectReservoir.selectedIndex].value
     let reservoir = getObjectBySlug(reservoirs, slug);
     let start = dateFrom.value;
     let end = dateTo.value;
