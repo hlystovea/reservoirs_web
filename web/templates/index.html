@@ -155,18 +155,23 @@
       });
   };
 
+  // Render a row of the info card
+  const renderTr = function(name, value, units) {
+    return `<tr class='text-muted'><td>${name}</td><td>${value} ${units}</td></tr>`
+  }
+
   // Render the info card
   const renderInfo = function(reservoir) {
     const infoTableBody = document.querySelector('#infoTableBody');
     let newInnerHTML = '';
   
-    newInnerHTML += reservoir.force_level !== null ? `<tr class='text-muted'><td>ФПУ</td><td>${reservoir.force_level} м</td></tr>` : '';
-    newInnerHTML += reservoir.normal_level !== null ? `<tr class='text-muted'><td>НПУ</td><td>${reservoir.normal_level} м</td></tr>` : '';
-    newInnerHTML += reservoir.dead_level !== null ? `<tr class='text-muted'><td>УМО</td><td>${reservoir.dead_level} м</td></tr>` : '';
-    newInnerHTML += reservoir.full_volume !== null ? `<tr class='text-muted'><td>Полный объём</td><td>${reservoir.full_volume} км<sup>3</sup></td></tr>` : '';
-    newInnerHTML += reservoir.useful_volume !== null ? `<tr class='text-muted'><td>Полезный объём</td><td>${reservoir.useful_volume} км<sup>3</sup></td></tr>` : '';
-    newInnerHTML += reservoir.area !== null ? `<tr class='text-muted'><td>Площадь</td><td>${reservoir.area} км<sup>2</sup></td></tr>` : '';
-    newInnerHTML += reservoir.max_depth !== null ? `<tr class='text-muted'><td>Макс. глубина</td><td>${reservoir.max_depth} м</td></tr>` : '';
+    newInnerHTML += reservoir.force_level !== null ? renderTr('ФПУ', reservoir.force_level, 'м') : '';
+    newInnerHTML += reservoir.normal_level !== null ? renderTr('НПУ', reservoir.normal_level, 'м') : '';
+    newInnerHTML += reservoir.dead_level !== null ? renderTr('УМО', reservoir.dead_level, 'м') : '';
+    newInnerHTML += reservoir.full_volume !== null ? renderTr('Полный объём', reservoir.full_volume, 'км<sup>3</sup>') : '';
+    newInnerHTML += reservoir.useful_volume !== null ? renderTr('Полезный объём', reservoir.useful_volume, 'км<sup>3</sup>') : '';
+    newInnerHTML += reservoir.area !== null ? renderTr('Площадь', reservoir.area, 'км<sup>2</sup>') : '';
+    newInnerHTML += reservoir.max_depth !== null ? renderTr('Макс. глубина', reservoir.max_depth, 'м') : '';
 
     infoTableBody.innerHTML = newInnerHTML;
   };
