@@ -61,11 +61,22 @@ const renderStatError = function(reservoir) {
                                  <td><h5><span style='color:#b894ff'>- м<sup>3</sup>/с</td>`;
 };
 
-  // Render the volumes row
+// Return statTableVolumes or create it
+const getOrCreateStatTable = function() {
+    let statTableVolumes = document.getElementById('statTableVolumes');
+    if (statTableVolumes == undefined) {
+        statTableVolumes = document.createElement('tr');
+        statTableVolumes.id = 'statTableVolumes';
+        document.getElementById('statTableBody').appendChild(statTableVolumes);
+    }
+    return statTableVolumes;
+};
+
+// Render the volumes row
 const renderVolumes = function(volumes) {
-    const statTableVolumes = document.querySelector('#statTableVolumes');
+    const statTableVolumes = getOrCreateStatTable();
     statTableVolumes.innerHTML = `<td align='end' colspan='2' class='align-middle'><small class='text-muted mx-3'>Суммарные объемы за период</td>
-    <td><small class='text-muted'>${volumes.inflow} км<sup>3</sup></td>
-    <td><small class='text-muted'>${volumes.outflow} км<sup>3</sup></td>
-    <td><small class='text-muted'>${volumes.spillway} км<sup>3</sup></td>`;
+                                  <td><small class='text-muted'>${volumes.inflow} км<sup>3</sup></td>
+                                  <td><small class='text-muted'>${volumes.outflow} км<sup>3</sup></td>
+                                  <td><small class='text-muted'>${volumes.spillway} км<sup>3</sup></td>`;
 };
