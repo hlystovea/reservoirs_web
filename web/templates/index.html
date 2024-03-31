@@ -47,99 +47,106 @@
     </div>
   </div>
 </div>
-{% block jquery %}
+
 <script>
   var reservoirs = [];
-  // requesting a list of reservoirs
-  $.ajax({
-    url: "{% url 'reservoirs:reservoir-list' %}",
-    success: function (data) {
-      reservoirs = data;
-      $("#selectReservoirs option").remove();
-      for (var i in data)
-        $("#selectReservoirs").append("<option id=" + data[i].slug + " val=" + data[i].slug + ">" + data[i].name + "</option>");
-      let slug = getCookie('reservoir');
-      if (slug !== undefined) {
-        document.getElementById(slug).selected = "true";
-      }
+  const dateFrom = document.getElementById('dateFrom');
+  const dateTo = document.getElementById('dateTo');
+  const selectReservoirs = document.getElementById('selectReservoirs');
+  const updateButton = document.getElementById('updateButton');
+
+  // Update content by click the button
+  updateButton.onclick = () => {
+    updateContent();
+  };
+
+  // Update content by change the select
+  selectReservoirs.onchange = () => {
+    updateContent();
+  };
+
+  // Update content by press Enter in dateFrom input
+  dateFrom.onkeydown = function (event) {
+    if (event.keyCode === 13) {
       updateContent();
-    },
-    error: function (error_data) {
-      console.log(error_data)
     }
+  };
+
+  // Update content by press Enter in dateTo input
+  dateTo.onkeydown = function (event) {
+    if (event.keyCode === 13) {
+      updateContent();
+    }
+  };
+
+  // Call onLoad after loading the html code
+  document.addEventListener('DOMContentLoaded', function () {
+    onLoad();
   });
 
-  // updating content by change the select
-  $(document).ready(function () {
-    $("#selectReservoirs").change(function () {
+  // Update content onLoad
+  async function onLoad() {
+    await updateReservoirs()
+    .then(() => {
+      const reservoir_slug = getCookie('reservoir');
+      if (reservoir_slug !== undefined) {
+        document.getElementById(reservoir_slug).selected = 'true';
+      }
       updateContent();
     });
-  });
+  };
 
-  // updating content by click the button
-  $(document).ready(function () {
-    $("#updateButton").click(function () {
-      updateContent();
+  const renderSelectReservoirs = function(reservoirs) {
+    let newInnerHTML = '';
+    for (const i in reservoirs) {
+      newInnerHTML += `<option id=${reservoirs[i].slug} value=${reservoirs[i].slug}>${reservoirs[i].name}</option>`;
+    }
+    selectReservoirs.innerHTML = newInnerHTML;
+  };
+
+  // Update reservoirs select
+  async function updateReservoirs() {
+    const url = "{% url 'reservoirs:reservoir-list' %}";
+    await fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      reservoirs = data;
+      renderSelectReservoirs(data);
+    })
+    .catch(error => {
+      console.log('Error: ', error);
     });
-  });
+  };
 
-  // updating content by press Enter in dateFrom form
-  $(document).ready(function () {
-    $("#dateFrom").bind("keydown", function (event) {
-      var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
-      if (keycode == 13) {
-        document.getElementById('updateButton').click();
-        return false;
-      } else {
-        return true;
-      }
-    });
-  });
-
-  // updating content by press Enter in dateTo form
-  $(document).ready(function () {
-    $("#dateTo").bind("keydown", function (event) {
-      var keycode = (event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode));
-      if (keycode == 13) {
-        document.getElementById('updateButton').click();
-        return false;
-      } else {
-        return true;
-      }
-    });
-  });
-
-  function updateContent() {
-    let slug = $("#selectReservoirs").find("option:selected").attr('val');
+  async function updateContent() {
+    let slug = selectReservoirs.options[selectReservoirs.selectedIndex].value
     let reservoir = getObjectBySlug(reservoirs, slug);
-    let start = $("#dateFrom").val();
-    let end = $("#dateTo").val();
+    let start = dateFrom.value;
+    let end = dateTo.value;
 
     renderInfo(reservoir);
     updateStat(reservoir);
-    getSituations(reservoir, start, end);
+    updateSituations(reservoir, start, end);
     updateYearSummary(reservoir);
   };
 
-  // gets water situation data
-  function getSituations(reservoir, start, end) {
+  // Update water situation charts
+  async function updateSituations(reservoir, start, end) {
     let url = reservoir.water_situations + "?";
     if (start !== null) url = url + "&start=" + start;
     if (end !== null) url = url + "&end=" + end;
-    $.ajax({
-      method: "GET",
-      url: url,
-      success: function (data) {
+    await fetch(url)
+      .then(response => response.json())
+      .then(data => {
         data = formatSituationsToArray(data);
         setLevelsChart(levelsChart, data);
         setFlowsChart(flowsChart, data);
         renderVolumes(calcVolumes(data));
         setCookie("reservoir", reservoir.slug);
-      },
-      error: function (error_data) {
-        console.log(error_data);
-      }
-    });
+      })
+      .catch(error => {
+        console.log('Error: ', error);
+      });
   };
 
   // Update year summary chart
@@ -156,15 +163,15 @@
   };
 
   // Render a row of the info card
-  const renderTr = function(name, value, units) {
+  const renderTr = function (name, value, units) {
     return `<tr class='text-muted'><td>${name}</td><td>${value} ${units}</td></tr>`
   }
 
   // Render the info card
-  const renderInfo = function(reservoir) {
+  const renderInfo = function (reservoir) {
     const infoTableBody = document.querySelector('#infoTableBody');
     let newInnerHTML = '';
-  
+
     newInnerHTML += reservoir.force_level !== null ? renderTr('ФПУ', reservoir.force_level, 'м') : '';
     newInnerHTML += reservoir.normal_level !== null ? renderTr('НПУ', reservoir.normal_level, 'м') : '';
     newInnerHTML += reservoir.dead_level !== null ? renderTr('УМО', reservoir.dead_level, 'м') : '';
@@ -184,5 +191,4 @@
   const flowsChart = new Chart(flowsCtx, flowsConfig);
   const yearSummaryChart = new Chart(yearSummaryCtx, yearSummaryConfig);
 </script>
-{% endblock %}
 {% endblock %}
