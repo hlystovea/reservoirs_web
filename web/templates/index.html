@@ -160,13 +160,13 @@
     const infoTableBody = document.querySelector('#infoTableBody');
     let newInnerHTML = '';
   
-    if (reservoir.force_level !== null) { newInnerHTML += `<tr class='text-muted'><td>ФПУ</td><td>${reservoir.force_level} м</td></tr>` };
-    if (reservoir.normal_level !== null) { newInnerHTML += `<tr class='text-muted'><td>НПУ</td><td>${reservoir.normal_level} м</td></tr>` };
-    if (reservoir.dead_level !== null) { newInnerHTML += `<tr class='text-muted'><td>УМО</td><td>${reservoir.dead_level} м</td></tr>` };
-    if (reservoir.full_volume !== null) { newInnerHTML += `<tr class='text-muted'><td>Полный объём</td><td>${reservoir.full_volume} км<sup>3</sup></td></tr>` };
-    if (reservoir.useful_volume !== null) { newInnerHTML += `<tr class='text-muted'><td>Полезный объём</td><td>${reservoir.useful_volume} км<sup>3</sup></td></tr>` };
-    if (reservoir.area !== null) { newInnerHTML += `<tr class='text-muted'><td>Площадь</td><td>${reservoir.area} км<sup>2</sup></td></tr>` };
-    if (reservoir.max_depth !== null) { newInnerHTML += `<tr class='text-muted'><td>Макс. глубина</td><td>${reservoir.max_depth} м</td></tr>` };
+    newInnerHTML += reservoir.force_level !== null ? `<tr class='text-muted'><td>ФПУ</td><td>${reservoir.force_level} м</td></tr>` : '';
+    newInnerHTML += reservoir.normal_level !== null ? `<tr class='text-muted'><td>НПУ</td><td>${reservoir.normal_level} м</td></tr>` : '';
+    newInnerHTML += reservoir.dead_level !== null ? `<tr class='text-muted'><td>УМО</td><td>${reservoir.dead_level} м</td></tr>` : '';
+    newInnerHTML += reservoir.full_volume !== null ? `<tr class='text-muted'><td>Полный объём</td><td>${reservoir.full_volume} км<sup>3</sup></td></tr>` : '';
+    newInnerHTML += reservoir.useful_volume !== null ? `<tr class='text-muted'><td>Полезный объём</td><td>${reservoir.useful_volume} км<sup>3</sup></td></tr>` : '';
+    newInnerHTML += reservoir.area !== null ? `<tr class='text-muted'><td>Площадь</td><td>${reservoir.area} км<sup>2</sup></td></tr>` : '';
+    newInnerHTML += reservoir.max_depth !== null ? `<tr class='text-muted'><td>Макс. глубина</td><td>${reservoir.max_depth} м</td></tr>` : '';
 
     infoTableBody.innerHTML = newInnerHTML;
   };
