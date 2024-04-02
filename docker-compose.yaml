@@ -31,6 +31,13 @@ services:
       - redis
     env_file:
       - ./.env
+    develop:
+      watch: 
+        - path: ./requirements.txt
+          action: rebuild
+        - path: ./web
+          target: /reservoirs_web
+          action: sync
 
   celery:
     build: .
