@@ -86,8 +86,9 @@
   // Set the forecast table
   const setForecastTable = function (data) {
     const forecastTable = document.querySelector('#forecastTable');
-    const inflows = data.inflows.slice(-10).reverse();
-    const dates = data.dates.slice(-10).reverse().map((date) => date.toLocaleDateString('ru', {
+    const inflows = data.inflows.slice(-10);
+    const dates = data.dates.slice(-10).map(dateString => new Date(dateString));
+    const local_dates = dates.map(date => date.toLocaleDateString('ru', {
       month: 'short',
       day: 'numeric'
     }));
@@ -95,21 +96,21 @@
     forecastTable.innerHTML = `<thead>
                                  <tr>
                                    <td>Дата</td>
-                                   <td>${dates[0]}</td>
-                                   <td>${dates[1]}</td>
-                                   <td>${dates[2]}</td>
-                                   <td>${dates[3]}</td>
-                                   <td>${dates[4]}</td>
-                                   <td>${dates[5]}</td>
-                                   <td>${dates[6]}</td>
-                                   <td>${dates[7]}</td>
-                                   <td>${dates[8]}</td>
-                                   <td>${dates[9]}</td>
+                                   <td>${local_dates[0]}</td>
+                                   <td>${local_dates[1]}</td>
+                                   <td>${local_dates[2]}</td>
+                                   <td>${local_dates[3]}</td>
+                                   <td>${local_dates[4]}</td>
+                                   <td>${local_dates[5]}</td>
+                                   <td>${local_dates[6]}</td>
+                                   <td>${local_dates[7]}</td>
+                                   <td>${local_dates[8]}</td>
+                                   <td>${local_dates[9]}</td>
                                  </tr>
                                </thead>
                                <tbody>
                                  <tr>
-                                   <td class="text-muted">Приток</td>
+                                   <td class="text-muted">Приток, м<sup>3</sup>/с</td>
                                    <td class="text-muted">${inflows[0]}</td>
                                    <td class="text-muted">${inflows[1]}</td>
                                    <td class="text-muted">${inflows[2]}</td>
