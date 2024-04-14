@@ -29,11 +29,12 @@
   </div>
   <div class="col-lg-9 mt-3">
     <div class="row justify-content-center px-2">
-      <div class="row px-3 my-3">
+      <h5 class="lead my-4">Прогноз притока на 10 дней</h5>
+      <div class="row px-3">
         <table class="table table-sm table-borderless caption-top" id="forecastTable">
         </table>
       </div>
-      <div class="row p-0">
+      <div class="row p-0 mt-3">
         <canvas id="forecastChart"></canvas>
       </div>
     </div>
@@ -86,10 +87,12 @@
   const setForecastTable = function (data) {
     const forecastTable = document.querySelector('#forecastTable');
     const inflows = data.inflows.slice(-10).reverse();
-    const dates = data.dates.slice(-10).reverse();
+    const dates = data.dates.slice(-10).reverse().map((date) => date.toLocaleDateString('ru', {
+      month: 'short',
+      day: 'numeric'
+    }));
 
-    forecastTable.innerHTML = `<caption>Прогноз притока на 10 дней</caption>
-                               <thead>
+    forecastTable.innerHTML = `<thead>
                                  <tr>
                                    <td>Дата</td>
                                    <td>${dates[0]}</td>
