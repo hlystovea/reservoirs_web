@@ -7,9 +7,15 @@ from services.parsers import (BoguchanParser, BratskParser, IrkutskParser,
                               KrasParser, MainskParser, SayanParser,
                               UstIlimParser)
 from services.scrapers import (GismeteoScraper, EbvuScraper,
-                               RoshydrometScraper, RP5Scraper)
+                               RoshydrometScraper, RushydroScraper, RP5Scraper)
 
 logger = get_task_logger(__name__)
+
+
+@app.task(autoretry_for=(HTTPError, ), retry_backoff=20)
+def run_rushydro_parsing():
+    RushydroScraper.scrape()
+    return True
 
 
 @app.task(autoretry_for=(HTTPError, ), retry_backoff=20)
