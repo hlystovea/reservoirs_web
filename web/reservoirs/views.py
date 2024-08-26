@@ -1,8 +1,6 @@
 from django.db.models import Avg, F, Max, Sum, Window
 from django.db.models.functions import Extract, ExtractYear, Lag, Round
 from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -52,7 +50,6 @@ class SituationViewSet(GenericViewSet):
         serializer.save(reservoir=reservoir)
         return Response(serializer.data, status=HTTP_201_CREATED)
 
-    @method_decorator(cache_page(60*60))
     def list(self, request, *args, **kwargs):
         reservoir = get_object_or_404(Reservoir, pk=kwargs['reservoir_pk'])
         params = [reservoir.pk]
