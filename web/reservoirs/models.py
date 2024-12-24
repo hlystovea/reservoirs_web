@@ -72,6 +72,11 @@ class Reservoir(models.Model):
         blank=True,
         null=True,
     )
+    geo_objects = models.ManyToManyField(
+        to='weather.GeoObject',
+        verbose_name='Географические объекты',
+        related_name='reservoirs',
+    )
 
     class Meta:
         db_table = 'reservoirs'
