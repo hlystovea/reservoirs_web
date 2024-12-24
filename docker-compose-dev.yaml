@@ -20,7 +20,7 @@ services:
     build: .
     container_name: reservoirs_web
     restart: unless-stopped
-    command: gunicorn web.wsgi --bind 0.0.0.0:8000
+    command: gunicorn web.wsgi --bind 0.0.0.0:8000 --reload
     volumes:
       - static_value:/reservoirs_web/static/
       - media_value:/reservoirs_web/media/
@@ -29,6 +29,13 @@ services:
       - redis
     env_file:
       - ./.env
+    develop:
+      watch: 
+        - path: ./requirements.txt
+          action: rebuild
+        - path: ./web
+          target: /reservoirs_web
+          action: sync
 
   celery:
     build: .
