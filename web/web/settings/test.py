@@ -1,7 +1,7 @@
-import os
-
 from ._base import *  # noqa
 
+
+TEST = True
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -12,11 +12,7 @@ ALLOWED_HOSTS = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'reservoirs',
-        'USER': os.environ['POSTGRES_USER'],
-        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
     }
 }
