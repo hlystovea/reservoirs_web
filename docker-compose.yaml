@@ -43,7 +43,7 @@ services:
       - ./.env
 
   selenium:
-    image: selenium/standalone-firefox
+    image: selenium/standalone-firefox:latest
     container_name: reservoirs_selenium
     shm_size: 8gb
     restart: unless-stopped
