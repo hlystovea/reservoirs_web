@@ -48,7 +48,7 @@ class RushydroParser(AbstractParser):
         situations = []
 
         try:
-            options = soup.find('select', id="ges")
+            options = soup.find('div', {'data-river': 'Все реки'})
             option = options.find('option', string=reservoir.station_name)
 
             logger.info(f'{cls.__name__} parsed {reservoir.name}')
