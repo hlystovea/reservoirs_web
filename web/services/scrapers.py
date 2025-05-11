@@ -55,8 +55,8 @@ class SituationMixin(AbstractScraper):
 
     @classmethod
     def save(
-            cls, date: dt.date, situation: Situation, reservoir: Reservoir
-            ) -> tuple[Optional[WaterSituation], bool]:
+        cls, date: dt.date, situation: Situation, reservoir: Reservoir
+    ) -> tuple[Optional[WaterSituation], bool]:
         try:
             obj, created = WaterSituation.objects.get_or_create(
                 date=date,
@@ -76,6 +76,20 @@ class RushydroScraper(SituationMixin):
         'RUSHYDRO_URL', 'https://www.rushydro.ru/informer/'
     )
 
+    @staticmethod
+    def get_driver() -> WebDriver:
+        options = webdriver.FirefoxOptions()
+        options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
+        selenium_url = env.get('SELENIUM_URL', 'http://selenium:4444/wd/hub')
+        return webdriver.Remote(selenium_url, options=options)
+
+    @classmethod
+    def get_page(cls, driver: WebDriver) -> str:
+        driver.get(cls.get_url())
+        time.sleep(3)
+        return driver.page_source
+
     @classmethod
     def get_url(cls, *args, **kwargs) -> str:
         return cls.base_url
@@ -90,15 +104,24 @@ class RushydroScraper(SituationMixin):
             slug='kras'
         ).all()
 
-        page = cls.get_page()
         saved_count = 0
+        driver = cls.get_driver()
 
-        for reservoir in reservoirs:
-            situations = cls.parser.parse(page, reservoir)
+        try:
+            page = cls.get_page(driver)
 
-            for situation in situations:
-                _, saved = cls.save(situation.date, situation, reservoir)
-                saved_count += saved
+            for reservoir in reservoirs:
+                situations = cls.parser.parse(page, reservoir)
+
+                for situation in situations:
+                    _, saved = cls.save(situation.date, situation, reservoir)
+                    saved_count += saved
+
+        except WebDriverException as error:
+            logger.error(f'Some error occured: {error!r}')
+
+        finally:
+            driver.quit()
 
         logger.info(f'{cls.__name__} saved {saved_count} new objs')
         logger.info(f'{cls.__name__} stop scraping')
@@ -227,8 +250,8 @@ class RP5Scraper(AbstractScraper):
 
     @classmethod
     def save(
-            cls, forecast: WeatherBase, geo_object: GeoObject
-            ) -> tuple[Optional[Weather], bool]:
+        cls, forecast: WeatherBase, geo_object: GeoObject
+    ) -> tuple[Optional[Weather], bool]:
         try:
             obj, created = Weather.objects.update_or_create(
                 date=forecast.date,
@@ -279,7 +302,7 @@ class RP5Scraper(AbstractScraper):
             logger.error(f'Some error occured: {error!r}')
 
         finally:
-            driver.close()
+            driver.quit()
 
         logger.info(f'{cls.__name__} stop scraping')
 

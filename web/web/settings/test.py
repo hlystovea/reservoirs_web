@@ -1,3 +1,12 @@
+import environ
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+env = environ.Env(DEBUG=(bool, False), TEST=(bool, False))
+
+
 from ._base import *  # noqa
 
 

@@ -48,14 +48,23 @@ services:
       - web
     env_file:
       - ./.env
+    develop:
+      watch: 
+        - path: ./requirements.txt
+          action: rebuild
+        - path: ./web
+          target: /reservoirs_web
+          action: sync
 
   selenium:
-    image: selenium/standalone-firefox
+    image: selenium/standalone-firefox:latest
     container_name: reservoirs_selenium
     shm_size: 8gb
     restart: unless-stopped
     depends_on:
       - celery
+    ports:
+      - '4444:4444'
 
   nginx:
     image: nginx:latest
