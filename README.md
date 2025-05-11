@@ -30,9 +30,29 @@
 
 ```nano .env```
 
-6. Запуск проекта
+5. Запуск проекта
 
 ```sudo docker compose up -d```
+
+6. Запуск миграций
+
+```sudo docker compose exec web python manage.py migrate --noinput```
+
+7. Сбор статических файлов
+
+```sudo docker compose exec web python manage.py collectstatic --no-input```
+
+8. Создание суперпользователя
+
+```sudo docker compose exec web python manage.py createsuperuser```
+
+9. Сайт будет доступен по адресу
+ 
+```http://127.0.0.1:8000```
+
+10. Админка сайта будет доступна по адресу
+
+```http://127.0.0.1:8000/admin```
 
 ## Документация
 Пользовательскую документацию можно получить по [этой ссылке](./docs/ru/index.md).

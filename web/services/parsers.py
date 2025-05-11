@@ -125,6 +125,93 @@ class SayanParser(KrasParser):
         return level, inflow, outflow, spillway
 
 
+class MainskParser(KrasParser):
+    @staticmethod
+    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
+        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[1]
+        inflow_str = raw_data.find_all(string=re.compile('средний сброс'))[0]
+        spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[1]  # noqa(E501)
+
+        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
+        outflow = re.findall(r'[0-9]+', level_str)[-1]
+        inflow = re.findall(r'[0-9]+', inflow_str)[-1]
+        spillway = re.findall(r'[0-9]+', spillway_str)[0]
+
+        return level, inflow, outflow, spillway
+
+
+class BratskParser(KrasParser):
+    @staticmethod
+    def preprocessing(values: Iterable) -> dict:
+        keys = ('level', 'inflow', 'outflow')
+        normalized_values = (float(v.replace(",", ".")) for v in values)
+        return dict(zip(keys, normalized_values))
+
+    @staticmethod
+    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
+        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[3]
+        inflow_str = raw_data.find_all(string=re.compile('приток общий'))[1]
+
+        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
+        outflow = re.findall(r'[0-9]+', level_str)[-1]
+        inflow = re.findall(r'[0-9]+', inflow_str)[0]
+
+        return level, inflow, outflow
+
+
+class UstIlimParser(KrasParser):
+    @staticmethod
+    def preprocessing(values: Iterable) -> dict:
+        keys = ('level', 'outflow')
+        normalized_values = (float(v.replace(",", ".")) for v in values)
+        return dict(zip(keys, normalized_values))
+
+    @staticmethod
+    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
+        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[4]
+
+        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
+        outflow = re.findall(r'[0-9]+', level_str)[-1]
+
+        return level, outflow
+
+
+class IrkutskParser(KrasParser):
+    @staticmethod
+    def preprocessing(values: Iterable) -> dict:
+        keys = ('level', 'outflow')
+        normalized_values = (float(v.replace(",", ".")) for v in values)
+        return dict(zip(keys, normalized_values))
+
+    @staticmethod
+    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
+        level_str = raw_data.find_all(string=re.compile('средний уровень'))[0]
+
+        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
+        outflow = re.findall(r'[0-9]+', level_str)[-1]
+
+        return level, outflow
+
+
+class BoguchanParser(KrasParser):
+    @staticmethod
+    def preprocessing(values: Iterable) -> dict:
+        keys = ('level', 'outflow', 'spillway')
+        normalized_values = (float(v.replace(",", ".")) for v in values)
+        return dict(zip(keys, normalized_values))
+
+    @staticmethod
+    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
+        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[5]
+        spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[3]  # noqa(E501)
+
+        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
+        outflow = re.findall(r'[0-9]+', level_str)[-1]
+        spillway = re.findall(r'[0-9]+', spillway_str)[0]
+
+        return level, outflow, spillway
+
+
 class RP5Parser(AbstractParser):
     @staticmethod
     def get_headlines(first_row: Union[Tag, NavigableString]) -> list[str]:
