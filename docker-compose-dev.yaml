@@ -30,8 +30,10 @@ services:
     env_file:
       - ./.env
     develop:
-      watch: 
-        - path: ./requirements.txt
+      watch:
+        - path: ./pyproject.toml
+          action: rebuild
+        - path: ./uv.lock
           action: rebuild
         - path: ./web
           target: /reservoirs_web
@@ -49,8 +51,10 @@ services:
     env_file:
       - ./.env
     develop:
-      watch: 
-        - path: ./requirements.txt
+      watch:
+        - path: ./pyproject.toml
+          action: rebuild
+        - path: ./uv.lock
           action: rebuild
         - path: ./web
           target: /reservoirs_web

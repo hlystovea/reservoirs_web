@@ -1,3 +1,4 @@
+import io
 import re
 import datetime as dt
 from abc import ABCMeta, abstractmethod
@@ -64,152 +65,90 @@ class RushydroParser(AbstractParser):
             return situations
 
 
-class KrasParser(AbstractParser):
+class EbvuDocxParser(AbstractParser):
+    reservoir_names: dict = {
+        'Саяно-Шушенское': 'sayano',
+        'Майнское': 'mainsk',
+        'Красноярское': 'kras',
+        'Иркутское': 'irkutsk',
+        'Братское': 'bratsk',
+        'Усть-Илимское': 'ust-ilim',
+        'Богучанское': 'boguch',
+        'Усть-Хантайское': 'ust-hantay',
+        'Курейское': 'kurey',
+    }
+
     @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[2]
-        inflow_str = raw_data.find_all(string=re.compile('приток общий'))[0]
-        spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[2]  # noqa(E501)
-
-        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
-        outflow = re.findall(r'[0-9]+', level_str)[-1]
-        inflow = re.findall(r'[0-9]+', inflow_str)[0]
-        spillway = re.findall(r'[0-9]+', spillway_str)[0]
-
-        return level, inflow, outflow, spillway
+    def parse_level(value: str) -> Optional[float]:
+        try:
+            return float(value.replace(',', '.').strip())
+        except (ValueError, AttributeError):
+            return None
 
     @staticmethod
-    def preprocessing(values: Iterable) -> dict:
-        keys = ('level', 'inflow', 'outflow', 'spillway')
-        normalized_values = (float(v.replace(",", ".")) for v in values)
-        return dict(zip(keys, normalized_values))
+    def parse_int(value: str) -> Optional[int]:
+        try:
+            return int(round(float(value.replace(',', '.').strip())))
+        except (ValueError, AttributeError):
+            return None
 
     @classmethod
-    def parse(cls, page: str, date: dt.date) -> Optional[Situation]:
-        soup = BeautifulSoup(page, 'html.parser')
+    def parse_inflow(cls, value: str) -> Optional[int]:
+        if not value or not value.strip():
+            return None
+
+        total = value.strip().split('/')[-1]
+        return cls.parse_int(total)
+
+    @classmethod
+    def parse(cls, content: bytes, date: dt.date) -> dict[str, Situation]:
+        from docx import Document
 
         try:
-            id_ = f'iul_day_{date.day}'
-            raw_data = soup.find('div', class_='iul_day_1', id=id_)
+            doc = Document(io.BytesIO(content))
+        except Exception as error:
+            logger.error(f'{cls.__name__} {repr(error)}')
+            return {}
 
-            logger.info(f'{cls.__name__} parsed date {date}')
+        if not doc.tables:
+            logger.error(f'{cls.__name__} no tables')
+            return {}
 
-            if raw_data is None:
-                logger.warning(f'{cls.__name__} Incorrect id: {id_}')
-                return
+        situations = {}
 
-            if raw_data.find(string=re.compile('Нет данных')):
-                logger.info(f'{cls.__name__} No data')
-                return
+        for row in doc.tables[0].rows[1:]:
+            cells = [cell.text.strip() for cell in row.cells]
 
-            normalized_values = cls.preprocessing(cls.get_values(raw_data))
+            if len(cells) < 6:
+                continue
 
-            return Situation(date=date, **normalized_values)
+            name = cells[0].split('(')[0].strip()
+            slug = cls.reservoir_names.get(name)
 
-        except (ValueError, AttributeError, ValidationError, IndexError) as e:
-            logger.error(f'{cls.__name__} {repr(e)}')
+            if slug is None:
+                continue
 
+            level = cls.parse_level(cells[1])
 
-class SayanParser(KrasParser):
-    @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[0]
-        inflow_str = raw_data.find_all(string=re.compile('приток'))[0]
-        spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[0]  # noqa(E501)
+            if level is None:
+                logger.warning(f'{cls.__name__} no level for {name}')
+                continue
 
-        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
-        outflow = re.findall(r'[0-9]+', level_str)[-1]
-        inflow = re.findall(r'[0-9]+', inflow_str)[0]
-        spillway = re.findall(r'[0-9]+', spillway_str)[0]
+            try:
+                situations[slug] = Situation(
+                    date=date,
+                    level=level,
+                    free_capacity=None,
+                    inflow=cls.parse_inflow(cells[5]),
+                    outflow=cls.parse_int(cells[3]),
+                    spillway=cls.parse_int(cells[4]),
+                )
+            except ValidationError as error:
+                logger.error(f'{cls.__name__} {repr(error)}')
 
-        return level, inflow, outflow, spillway
+        logger.info(f'{cls.__name__} parsed date {date}: {len(situations)}')
 
-
-class MainskParser(KrasParser):
-    @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[1]
-        inflow_str = raw_data.find_all(string=re.compile('средний сброс'))[0]
-        spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[1]  # noqa(E501)
-
-        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
-        outflow = re.findall(r'[0-9]+', level_str)[-1]
-        inflow = re.findall(r'[0-9]+', inflow_str)[-1]
-        spillway = re.findall(r'[0-9]+', spillway_str)[0]
-
-        return level, inflow, outflow, spillway
-
-
-class BratskParser(KrasParser):
-    @staticmethod
-    def preprocessing(values: Iterable) -> dict:
-        keys = ('level', 'inflow', 'outflow')
-        normalized_values = (float(v.replace(",", ".")) for v in values)
-        return dict(zip(keys, normalized_values))
-
-    @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[3]
-        inflow_str = raw_data.find_all(string=re.compile('приток общий'))[1]
-
-        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
-        outflow = re.findall(r'[0-9]+', level_str)[-1]
-        inflow = re.findall(r'[0-9]+', inflow_str)[0]
-
-        return level, inflow, outflow
-
-
-class UstIlimParser(KrasParser):
-    @staticmethod
-    def preprocessing(values: Iterable) -> dict:
-        keys = ('level', 'outflow')
-        normalized_values = (float(v.replace(",", ".")) for v in values)
-        return dict(zip(keys, normalized_values))
-
-    @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[4]
-
-        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
-        outflow = re.findall(r'[0-9]+', level_str)[-1]
-
-        return level, outflow
-
-
-class IrkutskParser(KrasParser):
-    @staticmethod
-    def preprocessing(values: Iterable) -> dict:
-        keys = ('level', 'outflow')
-        normalized_values = (float(v.replace(",", ".")) for v in values)
-        return dict(zip(keys, normalized_values))
-
-    @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-        level_str = raw_data.find_all(string=re.compile('средний уровень'))[0]
-
-        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
-        outflow = re.findall(r'[0-9]+', level_str)[-1]
-
-        return level, outflow
-
-
-class BoguchanParser(KrasParser):
-    @staticmethod
-    def preprocessing(values: Iterable) -> dict:
-        keys = ('level', 'outflow', 'spillway')
-        normalized_values = (float(v.replace(",", ".")) for v in values)
-        return dict(zip(keys, normalized_values))
-
-    @staticmethod
-    def get_values(raw_data: Union[Tag, NavigableString]) -> tuple:
-        level_str = raw_data.find_all(string=re.compile('верхний бьеф'))[5]
-        spillway_str = raw_data.find_all(string=re.compile('холостой сброс'))[3]  # noqa(E501)
-
-        level = re.findall(r'[0-9]+[,.][0-9]+', level_str)[0]
-        outflow = re.findall(r'[0-9]+', level_str)[-1]
-        spillway = re.findall(r'[0-9]+', spillway_str)[0]
-
-        return level, outflow, spillway
+        return situations
 
 
 class RP5Parser(AbstractParser):

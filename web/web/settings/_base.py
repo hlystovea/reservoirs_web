@@ -69,7 +69,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'web.wsgi.application'
 
-CASHES = {
+CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'reservoirs-cashe',

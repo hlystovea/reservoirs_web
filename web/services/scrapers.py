@@ -1,8 +1,10 @@
 import datetime as dt
+import re
 import time
 from abc import ABCMeta, abstractmethod
 from os import environ as env
 from typing import Optional
+from urllib.parse import urljoin
 
 import httpx
 from celery.utils.log import get_task_logger
@@ -15,7 +17,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from reservoirs.models import Reservoir, WaterSituation
-from services.parsers import (AbstractParser, GismeteoParser,
+from services.parsers import (AbstractParser, EbvuDocxParser, GismeteoParser,
                               RoshydrometParser, RP5Parser,
                               RushydroParser, Situation)
 from services.schemes import WeatherBase
@@ -128,67 +130,171 @@ class RushydroScraper(SituationMixin):
 
 
 class EbvuScraper(SituationMixin):
-    first_date = dt.date(2021, 7, 1)
-    base_url = env.get('EBVU_URL', 'https://enbvu.ru/i03_deyatelnost')
-    month_names: dict = {
-        1: 'jan',
-        2: 'feb',
-        3: 'mar',
-        4: 'apr',
-        5: 'may',
-        6: 'iun',
-        7: 'iul',
-        8: 'aug',
-        9: 'sep',
-        10: 'okt',
-        11: 'nov',
-        12: 'dec',
-    }
-
-    def __init__(self, parser: AbstractParser, reservoir_slug: str):
-        self.parser = parser
-        self.slug = reservoir_slug
-
-    def get_date(self):
-        try:
-            last_situation = WaterSituation.objects.filter(
-                reservoir__slug=self.slug).latest('date')
-            return last_situation.date + dt.timedelta(days=1)
-
-        except WaterSituation.DoesNotExist:
-            return self.first_date
+    parser = EbvuDocxParser()
+    base_url = env.get('EBVU_URL', 'https://en.favr.ru/node/1290')
+    date_pattern = re.compile(r'(\d{2})\.(\d{2})\.(\d{4})')
 
     @classmethod
-    def get_url(cls, date: dt.date) -> str:
-        num_year = date.year - cls.first_date.year
-        num_month = date.month - cls.first_date.month
-        page_number = num_year * 12 + num_month + 1
+    def get_url(cls) -> str:
+        return cls.base_url
 
-        return cls.base_url + '/i03.07.{0:=02}_{1}.php'.format(
-            page_number, cls.month_names[date.month]
+    @classmethod
+    def get_last_dates(cls) -> dict[str, Optional[dt.date]]:
+        from django.db.models import Max
+
+        rows = (
+            WaterSituation.objects
+            .filter(reservoir__slug__in=cls.parser.reservoir_names.values())
+            .values('reservoir__slug')
+            .annotate(last=Max('date'))
         )
+        return {row['reservoir__slug']: row['last'] for row in rows}
 
-    def scrape(self):
-        logger.info(f'{self.__class__.__name__} start scraping')
-        reservoir = Reservoir.objects.get(slug=self.slug)
+    @classmethod
+    def parse_date(cls, text: str) -> Optional[dt.date]:
+        match = cls.date_pattern.search(text or '')
 
-        date = self.get_date()
+        if not match:
+            return None
 
-        while date <= date.today():
-            page = self.get_page(date=date)
-            situation = self.parser.parse(page, date)
+        day, month, year = map(int, match.groups())
 
-            if situation:
-                obj, saved = self.save(date, situation, reservoir)
+        try:
+            return dt.date(year, month, day)
 
-                if saved:
+        except ValueError:
+            return None
+
+    @classmethod
+    def list_docx(cls, page: str) -> list[tuple[dt.date, str]]:
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(page, 'html.parser')
+        found = []
+
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+
+            if not href.lower().endswith('.docx'):
+                continue
+
+            date = cls.parse_date(href) or cls.parse_date(
+                link.get_text(separator=' ', strip=True))
+
+            if date is None:
+                logger.warning(f'{cls.__name__} no date in {href}')
+                continue
+
+            found.append((date, urljoin(cls.base_url, href)))
+
+        return sorted(set(found))
+
+    @classmethod
+    def get_page(cls) -> str:
+        with httpx.Client(verify=False) as client:
+            response = client.get(cls.get_url(), follow_redirects=True)
+
+        if response.is_error:
+            raise httpx.HTTPError(
+                f'{response.status_code} {response.reason_phrase}')
+
+        return response.text
+
+    @classmethod
+    def get_file(cls, url: str) -> bytes:
+        with httpx.Client(verify=False) as client:
+            response = client.get(url, follow_redirects=True)
+
+        if response.is_error:
+            raise httpx.HTTPError(
+                f'{response.status_code} {response.reason_phrase}')
+
+        return response.content
+
+    @classmethod
+    def save(
+        cls, date: dt.date, situation: Situation, reservoir: Reservoir
+    ) -> tuple[Optional[WaterSituation], bool]:
+        data = situation.dict(exclude_none=True)
+        data.pop('date', None)
+
+        try:
+            return WaterSituation.objects.update_or_create(
+                date=date,
+                reservoir=reservoir,
+                defaults=data
+            )
+
+        except DatabaseError as error:
+            logger.error(f'{cls.__name__} {repr(error)}')
+            return None, False
+
+    @classmethod
+    def scrape_file(cls, date, url, slugs, reservoirs, last_dates) -> int:
+        needed = [
+            slug for slug in slugs
+            if date > last_dates.get(slug, dt.date.min)
+        ]
+
+        if not needed:
+            return 0
+
+        saved_count = 0
+
+        try:
+            content = cls.get_file(url)
+            situations = cls.parser.parse(content, date)
+
+            for slug, situation in situations.items():
+                if slug not in needed:
+                    continue
+
+                reservoir = reservoirs.get(slug)
+
+                if reservoir is None:
+                    continue
+
+                obj, created = cls.save(date, situation, reservoir)
+
+                if obj is not None:
+                    last_dates[slug] = date
+                    saved_count += 1
+                    action = 'created' if created else 'updated'
                     logger.info(
-                        f'{self.__class__.__name__} saved new obj: {obj}'
+                        f'{cls.__name__} {action}: {reservoir} {date}'
                     )
 
-            date += dt.timedelta(days=1)
+        except httpx.HTTPError as error:
+            logger.error(f'{cls.__name__} {error!r}')
 
-        logger.info(f'{self.__class__.__name__} stop scraping')
+        return saved_count
+
+    @classmethod
+    def scrape(cls):
+        logger.info(f'{cls.__name__} start scraping')
+
+        slugs = list(cls.parser.reservoir_names.values())
+        last_dates = cls.get_last_dates()
+        page = cls.get_page()
+        docx_list = cls.list_docx(page)
+
+        logger.info(f'{cls.__name__} found {len(docx_list)} docx')
+
+        reservoirs = {
+            r.slug: r for r in Reservoir.objects.filter(slug__in=slugs)
+        }
+
+        for slug in slugs:
+            if slug not in reservoirs:
+                logger.warning(f'{cls.__name__} no reservoir for slug {slug}')
+
+        saved_count = sum(
+            cls.scrape_file(date, url, slugs, reservoirs, last_dates)
+            for date, url in docx_list
+        )
+
+        logger.info(f'{cls.__name__} saved {saved_count} new objs')
+        logger.info(f'{cls.__name__} stop scraping')
 
 
 class RP5Scraper(AbstractScraper):
