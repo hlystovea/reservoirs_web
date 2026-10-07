@@ -1,55 +1,62 @@
-name: Reservoirs Web deploy
+name: Reservoirs Web image
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  copy_configs:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run tests
+        run: uv run pytest
+
+  build_and_push:
+    runs-on: ubuntu-latest
+    needs: test
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-      - name: copy start files via ssh password
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{  secrets.HOST }}
-          port: ${{ secrets.PORT }}
-          username: ${{ secrets.USER  }}
-          key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.PASSPHRASE }}
-          source: "*,!.git,!.github,!.venv,!.env"
-          target: "~/reservoirs_web"
-          overwrite: true
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: copy_configs
-    steps:
-      - name: executing remote ssh commands to deploy
-        uses: appleboy/ssh-action@master
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.HOST }}
-          port: ${{ secrets.PORT }}
-          username: ${{ secrets.USER }}
-          key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.PASSPHRASE }}
-          script: |
-            cd reservoirs_web
-            sudo docker compose stop
-            sudo docker compose rm web -f
-            echo POSTGRES_DB=${{ secrets.POSTGRES_DB }} > .env
-            echo POSTGRES_USER=${{ secrets.POSTGRES_USER }} >> .env
-            echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
-            echo SECRET_KEY=${{ secrets.SECRET_KEY }} >> .env
-            echo REDIS_URL=${{ secrets.REDIS_URL }} >> .env
-            echo GIS_TOKEN=${{ secrets.GIS_TOKEN }} >> .env
-            sudo docker compose up -d --build
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            hlystovea/reservoirs_web:latest
+            hlystovea/reservoirs_web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   send_message:
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: build_and_push
     steps:
     - name: send message
       uses: appleboy/telegram-action@master

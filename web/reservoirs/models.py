@@ -76,6 +76,7 @@ class Reservoir(models.Model):
         to='weather.GeoObject',
         verbose_name='Географические объекты',
         related_name='reservoirs',
+        blank=True,
     )
 
     class Meta:

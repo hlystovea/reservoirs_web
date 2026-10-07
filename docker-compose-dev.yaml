@@ -17,11 +17,13 @@ services:
       - redis_data:/data
 
   web:
-    build: .
+    image: hlystovea/reservoirs_web:latest
     container_name: reservoirs_web
     restart: unless-stopped
     command: gunicorn web.wsgi --bind 0.0.0.0:8000 --reload
     volumes:
+      - ./web:/reservoirs_web
+      - /reservoirs_web/.venv
       - static_value:/reservoirs_web/static/
       - media_value:/reservoirs_web/media/
     depends_on:
@@ -29,36 +31,20 @@ services:
       - redis
     env_file:
       - ./.env
-    develop:
-      watch:
-        - path: ./pyproject.toml
-          action: rebuild
-        - path: ./uv.lock
-          action: rebuild
-        - path: ./web
-          target: /reservoirs_web
-          action: sync
 
   celery:
-    build: .
+    image: hlystovea/reservoirs_web:latest
     container_name: reservoirs_celery
     restart: unless-stopped
     command: celery -A web worker -B -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
+      - ./web:/reservoirs_web
+      - /reservoirs_web/.venv
       - media_value:/reservoirs_web/media/
     depends_on:
       - web
     env_file:
       - ./.env
-    develop:
-      watch:
-        - path: ./pyproject.toml
-          action: rebuild
-        - path: ./uv.lock
-          action: rebuild
-        - path: ./web
-          target: /reservoirs_web
-          action: sync
 
   selenium:
     image: selenium/standalone-firefox:latest
