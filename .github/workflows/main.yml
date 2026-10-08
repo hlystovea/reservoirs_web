@@ -25,9 +25,6 @@ jobs:
       - name: Run tests
         run: uv run pytest
         env:
-          # .env в gitignore, а settings/_base.py читает эти переменные
-          # на уровне модуля. Тесты идут на sqlite3 и LocMemCache, но
-          # импорт настроек всё равно требует полный набор.
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
