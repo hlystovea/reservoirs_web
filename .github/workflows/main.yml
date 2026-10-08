@@ -24,6 +24,11 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
 
   build_and_push:
     runs-on: ubuntu-24.04
