@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
@@ -26,7 +26,7 @@ jobs:
         run: uv run pytest
 
   build_and_push:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: test
     if: github.ref == 'refs/heads/main'
     steps:
@@ -55,7 +55,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   send_message:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build_and_push
     steps:
     - name: send message
